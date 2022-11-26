@@ -63,6 +63,10 @@ static bool valid_pathname(char const *name) {
  */
 static int tfs_lookup(char const *name, inode_t const *root_inode) {
     // TODO: assert that root_inode is the root directory
+    // if (root_inode->i_data_block != 0) {
+    //     return -1;
+    // }
+
     if (!valid_pathname(name)) {
         return -1;
     }
@@ -167,7 +171,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
 
-    //  From the open file table entry, we get the inode
+    // From the open file table entry, we get the inode
     inode_t *inode = inode_get(file->of_inumber);
     ALWAYS_ASSERT(inode != NULL, "tfs_write: inode of open file deleted");
 

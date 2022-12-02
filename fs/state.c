@@ -167,7 +167,7 @@ static int inode_alloc(void) {
 
         // Finds first free entry in inode table
         if (freeinode_ts[inumber] == FREE) {
-            //  Found a free entry, so takes it for the new inode
+            // Found a free entry, so takes it for the new inode
             freeinode_ts[inumber] = TAKEN;
 
             return (int)inumber;

@@ -63,10 +63,11 @@ static bool valid_pathname(char const *name) {
  */
 static int tfs_lookup(char const *name, inode_t const *root_inode) {
     // TODO: assert that root_inode is the root directory
-    // if (root_inode->i_data_block != 0) {
-    //     return -1;
-    // }
+    if (root_inode == NULL || root_inode->i_data_block != 0) {
+        return -1; // root_inode is not the actual root inode
+    }
 
+    // Checks if the path name is valid
     if (!valid_pathname(name)) {
         return -1;
     }

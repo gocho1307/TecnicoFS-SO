@@ -1,6 +1,5 @@
 #include "state.h"
 #include "betterassert.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

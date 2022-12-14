@@ -247,8 +247,17 @@ int tfs_unlink(char const *target) {
 }
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
+
+    // Checks if the path names is valid
+    if (!valid_pathname(source_path)) {
+        return -1;
+    }
+    if (!valid_pathname(dest_path)) {
+        return -1;
+    }
+
 	FILE* fp = fopen(source_path, "r");
-	ALWAYS_ASSERT(fp != NULL, "tfs_copy_from_external_fs: couldn't open source file");
+	if ( fp == NULL ) return -1;
 
 	// Checking if it fits in one block
 	fseek(fp, 0L, SEEK_END);
@@ -258,8 +267,32 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
 	}
 	rewind(fp);
 
+	// Directory entry
+	source_path = strrchr(source_path, '/') + 1; // Filename
+	if ( source_path[0] == '\0' ) return -1;
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+	if ( root_dir_inode == NULL ) return -1;
+	int fhandle = -1;
+	int inumber = tfs_lookup(source_path, root_dir_inode);
+	if ( inumber == -1 ) {
+		fhandle = tfs_open(source_path, TFS_O_CREAT);
+	} else {
+		fhandle = tfs_open(source_path, TFS_O_TRUNC);
+	}
+	if ( fhandle == -1 ) return -1;
+
 	// Buffering the file
 	void* buffer = malloc(toread);
 	size_t read = fread(buffer, 1, toread, fp);
 
+	// Writing
+	if ( tfs_write(fhandle, buffer, toread) == -1 ) return -1;
+
+	// Free buffer
+	free(buffer);
+
+	// Close open file
+	if ( tfs_close(fhandle) == -1 ) return -1;
+
+	return 0;
 }

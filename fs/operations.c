@@ -256,43 +256,49 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
 
-	FILE* fp = fopen(source_path, "r");
-	if ( fp == NULL ) return -1;
+    FILE *fp = fopen(source_path, "r");
+    if (fp == NULL)
+        return -1;
 
-	// Checking if it fits in one block
-	fseek(fp, 0L, SEEK_END);
-	long int toread = ftell(fp);
-	if ( toread > state_block_size() ) {
-		return -1;
-	}
-	rewind(fp);
+    // Checking if it fits in one block
+    fseek(fp, 0L, SEEK_END);
+    long int toread = ftell(fp);
+    if (toread > state_block_size()) {
+        return -1;
+    }
+    rewind(fp);
 
-	// Directory entry
-	source_path = strrchr(source_path, '/') + 1; // Filename
-	if ( source_path[0] == '\0' ) return -1;
+    // Directory entry
+    source_path = strrchr(source_path, '/') + 1; // Filename
+    if (source_path[0] == '\0')
+        return -1;
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
-	if ( root_dir_inode == NULL ) return -1;
-	int fhandle = -1;
-	int inumber = tfs_lookup(source_path, root_dir_inode);
-	if ( inumber == -1 ) {
-		fhandle = tfs_open(source_path, TFS_O_CREAT);
-	} else {
-		fhandle = tfs_open(source_path, TFS_O_TRUNC);
-	}
-	if ( fhandle == -1 ) return -1;
+    if (root_dir_inode == NULL)
+        return -1;
+    int fhandle = -1;
+    int inumber = tfs_lookup(source_path, root_dir_inode);
+    if (inumber == -1) {
+        fhandle = tfs_open(source_path, TFS_O_CREAT);
+    } else {
+        fhandle = tfs_open(source_path, TFS_O_TRUNC);
+    }
+    if (fhandle == -1)
+        return -1;
 
-	// Buffering the file
-	void* buffer = malloc(toread);
-	size_t read = fread(buffer, 1, toread, fp);
+    // Buffering the file
+    void *buffer = malloc(toread);
+    size_t read = fread(buffer, 1, toread, fp);
 
-	// Writing
-	if ( tfs_write(fhandle, buffer, toread) == -1 ) return -1;
+    // Writing
+    if (tfs_write(fhandle, buffer, toread) == -1)
+        return -1;
 
-	// Free buffer
-	free(buffer);
+    // Free buffer
+    free(buffer);
 
-	// Close open file
-	if ( tfs_close(fhandle) == -1 ) return -1;
+    // Close open file
+    if (tfs_close(fhandle) == -1)
+        return -1;
 
-	return 0;
+    return 0;
 }

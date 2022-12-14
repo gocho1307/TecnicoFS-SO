@@ -247,10 +247,19 @@ int tfs_unlink(char const *target) {
 }
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
-    (void)source_path;
-    (void)dest_path;
-    // ^ this is a trick to keep the compiler from complaining about unused
-    // variables. TODO: remove
+	FILE* fp = fopen(source_path, "r");
+	ALWAYS_ASSERT(fp != NULL, "tfs_copy_from_external_fs: couldn't open source file");
 
-    PANIC("TODO: tfs_copy_from_external_fs");
+	// Checking if it fits in one block
+	fseek(fp, 0L, SEEK_END);
+	long int toread = ftell(fp);
+	if ( toread > state_block_size() ) {
+		return -1;
+	}
+	rewind(fp);
+
+	// Buffering the file
+	void* buffer = malloc(toread);
+	size_t read = fread(buffer, 1, toread, fp);
+
 }

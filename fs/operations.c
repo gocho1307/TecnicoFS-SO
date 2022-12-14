@@ -286,11 +286,14 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
 
     // Buffering the file
-    void *buffer = malloc(toread);
-    size_t read = fread(buffer, 1, toread, fp);
+    void *buffer = malloc((size_t)toread);
+    size_t read = fread(buffer, 1, (size_t)toread, fp);
+    if (read < toread) {
+        return -1;
+    }
 
     // Writing
-    if (tfs_write(fhandle, buffer, toread) == -1)
+    if (tfs_write(fhandle, buffer, (size_t)toread) == -1)
         return -1;
 
     // Free buffer

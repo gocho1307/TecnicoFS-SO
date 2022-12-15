@@ -276,7 +276,7 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
     }
 
     // Buffers the file data
-    char *buffer = (char *)malloc((size_t)to_read * sizeof(char));
+    char buffer[to_read];
     size_t read = fread(buffer, sizeof(char), (size_t)to_read, source_file);
     if (read < to_read) {
         // we are returning -1 so the return values are ignored
@@ -286,20 +286,17 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
     }
 
     // Writes the data into the file in TecnicoFS
-    if (tfs_write(dest_file, buffer, (size_t)to_read) == -1) {
-        // we are returning -1 so the return values are ignored
-        fclose(source_file);
-        tfs_close(dest_file);
-        return -1;
-    }
+    ssize_t written = tfs_write(dest_file, buffer, (size_t)to_read);
 
-    // Frees the buffer and closes the files
-    free(buffer);
+    // Closes the files
     if (fclose(source_file) != 0) {
         tfs_close(dest_file); // since we return -1, we can ignore the result
         return -1;
     }
     if (tfs_close(dest_file) == -1) {
+        return -1;
+    }
+    if (written == -1) {
         return -1;
     }
 

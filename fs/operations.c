@@ -1,12 +1,11 @@
 #include "operations.h"
+#include "betterassert.h"
 #include "config.h"
 #include "state.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "betterassert.h"
 
 tfs_params tfs_default_params() {
     tfs_params params = {
@@ -62,7 +61,6 @@ static bool valid_pathname(char const *name) {
  * Returns the inumber of the file, -1 if unsuccessful.
  */
 static int tfs_lookup(char const *name, inode_t const *root_inode) {
-    // TODO: assert that root_inode is the root directory
     if (root_inode == NULL || root_inode->i_data_block != 0) {
         return -1; // root_inode is not the actual root inode
     }
@@ -247,61 +245,63 @@ int tfs_unlink(char const *target) {
 }
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
-
-    // Checks if the path names is valid
-    if (!valid_pathname(source_path)) {
-        return -1;
-    }
+    // Checks if the path name is valid
     if (!valid_pathname(dest_path)) {
         return -1;
     }
 
-    FILE *fp = fopen(source_path, "r");
-    if (fp == NULL)
-        return -1;
-
-    // Checking if it fits in one block
-    fseek(fp, 0L, SEEK_END);
-    long int toread = ftell(fp);
-    if (toread > state_block_size()) {
+    // Opens the file from the external fs
+    FILE *source_file = fopen(source_path, "r");
+    if (source_file == NULL) {
         return -1;
     }
-    rewind(fp);
 
-    // Directory entry
-    source_path = strrchr(source_path, '/') + 1; // Filename
-    if (source_path[0] == '\0')
+    // Checks if the file fits in one block
+    fseek(source_file, 0L, SEEK_END);
+    long int to_read = ftell(source_file);
+    if (to_read > state_block_size()) {
+        fclose(source_file); // since we return -1, we can ignore the result
         return -1;
+    }
+    rewind(source_file);
+
+    // Opens the destination file in the FS
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
-    if (root_dir_inode == NULL)
-        return -1;
-    int fhandle = -1;
-    int inumber = tfs_lookup(source_path, root_dir_inode);
-    if (inumber == -1) {
-        fhandle = tfs_open(source_path, TFS_O_CREAT);
-    } else {
-        fhandle = tfs_open(source_path, TFS_O_TRUNC);
-    }
-    if (fhandle == -1)
-        return -1;
-
-    // Buffering the file
-    void *buffer = malloc((size_t)toread);
-    size_t read = fread(buffer, 1, (size_t)toread, fp);
-    if (read < toread) {
+    ALWAYS_ASSERT(root_dir_inode != NULL,
+                  "tfs_copy_from_external_fs: root dir inode must exist");
+    int dest_file = tfs_open(dest_path, TFS_O_CREAT | TFS_O_TRUNC);
+    if (dest_file == -1) {
+        fclose(source_file); // since we return -1, we can ignore the result
         return -1;
     }
 
-    // Writing
-    if (tfs_write(fhandle, buffer, (size_t)toread) == -1)
+    // Buffers the file data
+    char *buffer = (char *)malloc((size_t)to_read * sizeof(char));
+    size_t read = fread(buffer, sizeof(char), (size_t)to_read, source_file);
+    if (read < to_read) {
+        // we are returning -1 so the return values are ignored
+        fclose(source_file);
+        tfs_close(dest_file);
         return -1;
+    }
 
-    // Free buffer
+    // Writes the data into the file in TecnicoFS
+    if (tfs_write(dest_file, buffer, (size_t)to_read) == -1) {
+        // we are returning -1 so the return values are ignored
+        fclose(source_file);
+        tfs_close(dest_file);
+        return -1;
+    }
+
+    // Frees the buffer and closes the files
     free(buffer);
-
-    // Close open file
-    if (tfs_close(fhandle) == -1)
+    if (fclose(source_file) != 0) {
+        tfs_close(dest_file); // since we return -1, we can ignore the result
         return -1;
+    }
+    if (tfs_close(dest_file) == -1) {
+        return -1;
+    }
 
     return 0;
 }

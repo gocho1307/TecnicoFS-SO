@@ -70,12 +70,12 @@ int tfs_sym_link(char const *target, char const *link_name);
  * Create a (hard) link to a file.
  *
  * Input:
- *   - target_file: absolute path name of the link target
+ *   - target: absolute path name of the link target
  *   - link_name: absolute path name of the link to be created
  *
  * Returns 0 if successful, -1 otherwise.
  */
-int tfs_link(char const *target_file, char const *link_name);
+int tfs_link(char const *target, char const *link_name);
 
 /**
  * Close a file.
@@ -93,12 +93,12 @@ int tfs_close(int fhandle);
  * Input:
  *   - fhandle: file handle (obtained from a previous call to tfs_open)
  *   - buffer: buffer containing the contents to write
- *   - len: length of the buffer contents (in bytes)
+ *   - to_write: length of the buffer contents (in bytes)
  *
  * Returns the number of bytes that were written (can be lower than 'len' if the
  * maximum file size is exceeded), or -1 in case of error.
  */
-ssize_t tfs_write(int fhandle, void const *buffer, size_t len);
+ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write);
 
 /**
  * Read from an open file, starting at the current offset.

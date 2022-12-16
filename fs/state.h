@@ -16,7 +16,7 @@ typedef struct {
     int d_inumber;
 } dir_entry_t;
 
-typedef enum { T_FILE, T_DIRECTORY } inode_type;
+typedef enum { T_FILE, T_DIRECTORY, T_SYM_LINK } inode_type;
 
 /**
  * Inode
@@ -26,6 +26,7 @@ typedef struct {
 
     size_t i_size;
     int i_data_block;
+    size_t i_hard_links;
 
     // in a more complete FS, more fields could exist here
 } inode_t;

@@ -60,22 +60,22 @@ int tfs_open(char const *name, tfs_file_mode_t mode);
  *
  * Input:
  *   - target: absolute path name of the link target
- *   - link_name: absolute path name of the link to be created
+ *   - link: absolute path name of the link to be created
  *
  * Returns 0 if successful, -1 otherwise.
  */
-int tfs_sym_link(char const *target, char const *link_name);
+int tfs_sym_link(char const *target, char const *link);
 
 /**
  * Create a (hard) link to a file.
  *
  * Input:
  *   - target: absolute path name of the link target
- *   - link_name: absolute path name of the link to be created
+ *   - link: absolute path name of the link to be created
  *
  * Returns 0 if successful, -1 otherwise.
  */
-int tfs_link(char const *target, char const *link_name);
+int tfs_link(char const *target, char const *link);
 
 /**
  * Close a file.

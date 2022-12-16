@@ -132,6 +132,10 @@ int state_init(tfs_params params) {
  * Returns 0 if succesful, -1 otherwise.
  */
 int state_destroy(void) {
+    if (inode_table == NULL) {
+        return -1; // already freed
+    }
+
     free(inode_table);
     free(freeinode_ts);
     free(fs_data);
@@ -231,6 +235,7 @@ int inode_create(inode_type i_type) {
         }
     } break;
     case T_FILE:
+    case T_SYM_LINK:
         // In case of a new file, simply sets its size to 0
         inode_table[inumber].i_size = 0;
         inode_table[inumber].i_data_block = -1;
@@ -238,6 +243,7 @@ int inode_create(inode_type i_type) {
     default:
         PANIC("inode_create: unknown file type");
     }
+    inode_table[inumber].i_hard_links = 1;
 
     return inumber;
 }

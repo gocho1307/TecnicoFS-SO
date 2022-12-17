@@ -24,6 +24,8 @@ int main() {
     // Scenario 3: the destination path name is invalid
     assert(tfs_copy_from_external_fs(external_path, "tmp-test") == -1);
 
+    assert(tfs_destroy() != -1);
+
     printf("Successful test.\n");
 
     return 0;

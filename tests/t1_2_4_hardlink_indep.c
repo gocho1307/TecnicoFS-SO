@@ -130,6 +130,8 @@ int main() {
         run_test(rep);
     }
 
+    assert(tfs_destroy() != -1);
+
     printf("Successful test.\n");
 
     return 0;

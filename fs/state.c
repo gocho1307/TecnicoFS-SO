@@ -1,5 +1,6 @@
 #include "state.h"
 #include "betterassert.h"
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,7 +134,7 @@ int state_init(tfs_params params) {
  */
 int state_destroy(void) {
     if (inode_table == NULL) {
-        return -1; // already freed
+        return -1; // already destroyed
     }
 
     free(inode_table);
@@ -352,6 +353,10 @@ int add_dir_entry(inode_t *inode, char const *sub_name, int sub_inumber) {
 
     // Finds and fills the first empty entry
     for (size_t i = 0; i < MAX_DIR_ENTRIES; i++) {
+        if ((dir_entry[i].d_inumber != -1) &&
+            (strcmp(dir_entry[i].d_name, sub_name) == 0)) {
+            return -1; // an entry with the same name already exists
+        }
         if (dir_entry[i].d_inumber == -1) {
             dir_entry[i].d_inumber = sub_inumber;
             strncpy(dir_entry[i].d_name, sub_name, MAX_FILE_NAME - 1);

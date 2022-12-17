@@ -25,6 +25,8 @@ int main() {
     assert(r == strlen(str_ext_file));
     assert(!memcmp(buffer, str_ext_file, strlen(str_ext_file)));
 
+    assert(tfs_destroy() != -1);
+
     printf("Successful test.\n");
 
     return 0;

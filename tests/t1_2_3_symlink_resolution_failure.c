@@ -36,5 +36,7 @@ int main() {
     // Link usable again - target was recreated
     assert(tfs_open(link_path, TFS_O_APPEND) != -1);
 
+    assert(tfs_destroy() != -1);
+
     printf("Successful test.\n");
 }

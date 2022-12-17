@@ -2,6 +2,7 @@
 #include "betterassert.h"
 #include "config.h"
 #include "state.h"
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +30,7 @@ int tfs_init(tfs_params const *params_ptr) {
         return -1;
     }
 
-    // create root inode
+    // Creates the root inode
     int root = inode_create(T_DIRECTORY);
     if (root != ROOT_DIR_INUM) {
         return -1;
@@ -70,7 +71,7 @@ static int tfs_lookup(char const *name, inode_t const *root_inode) {
         return -1;
     }
 
-    // skip the initial '/' character
+    // Skips the initial '/' character
     name++;
 
     return find_in_dir(root_inode, name);
@@ -94,12 +95,12 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
 
+        // If the file is a symbolic link, it opens the stored file path
         if (inode->i_node_type == T_SYM_LINK) {
-            int sym_link_handle = add_to_open_file_table(inum, offset);
-            char buffer[state_block_size()];
-            memset(buffer, 0, sizeof(buffer));
-            tfs_read(sym_link_handle, buffer, state_block_size());
-            return tfs_open(buffer, mode);
+            char *target = (char *)data_block_get(inode->i_data_block);
+            ALWAYS_ASSERT(target != NULL,
+                          "tfs_open: data block deleted mid-read");
+            return tfs_open(target, mode);
         }
 
         // Truncate (if requested)
@@ -145,32 +146,36 @@ int tfs_sym_link(char const *target, char const *link) {
         return -1;
     }
 
-    // TODO: fix this to work for subdirectories
-    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
-    ALWAYS_ASSERT(root_dir_inode != NULL,
-                  "tfs_sym_link: root dir inode must exist");
-
-    int link_handle = tfs_open(link, TFS_O_CREAT);
-    if (link_handle == -1) {
-        tfs_close(link_handle); // we ignore the value since we return -1
-        return -1;
-    }
-    tfs_write(link_handle, target, strlen(target));
-    if (tfs_close(link_handle) == -1) {
-        return -1;
-    }
-
-    int link_inum = tfs_lookup(link, root_dir_inode);
+    // Creates the symbolic link inode and alocates memory for the target path
+    int link_inum = inode_create(T_SYM_LINK);
     if (link_inum == -1) {
         return -1;
     }
     inode_t *link_inode = inode_get(link_inum);
     if (link_inode == NULL) {
+        inode_delete(link_inum);
         return -1;
     }
-    link_inode->i_node_type = T_SYM_LINK;
+    int bnum = data_block_alloc();
+    if (bnum == -1) {
+        inode_delete(link_inum);
+        return -1;
+    }
+    link_inode->i_data_block = bnum;
 
-    add_dir_entry(root_dir_inode, link + 1, link_inum);
+    // Writes the target path into the symbolic link data block
+    char *block = data_block_get(link_inode->i_data_block);
+    ALWAYS_ASSERT(block != NULL, "tfs_sym_link: data block deleted mid-write");
+    memcpy(block, target, strlen(target));
+
+    // Adds a directory entry for the symbolic link
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+    ALWAYS_ASSERT(root_dir_inode != NULL,
+                  "tfs_sym_link: root dir inode must exist");
+    if (add_dir_entry(root_dir_inode, link + 1, link_inum) == -1) {
+        inode_delete(link_inum);
+        return -1;
+    }
 
     return 0;
 }
@@ -181,18 +186,20 @@ int tfs_link(char const *target, char const *link) {
         return -1;
     }
 
-    // TODO: fix this to work for subdirectories
+    // Adds a directory entry of the hard link
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_link: root dir inode must exist");
-
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
         return -1;
     }
+    if (add_dir_entry(root_dir_inode, link + 1, target_inum) == -1) {
+        return -1;
+    }
 
-    add_dir_entry(root_dir_inode, link + 1, target_inum);
-
+    // Makes sure to not create hard links to symbolic links and increments the
+    // number of hard links on the target inode
     inode_t *target_inode = inode_get(target_inum);
     if (target_inode == NULL || target_inode->i_node_type == T_SYM_LINK) {
         clear_dir_entry(root_dir_inode, link + 1);
@@ -292,21 +299,24 @@ int tfs_unlink(char const *target) {
         return -1;
     }
 
+    // Gets the target file inode
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
-                  "tfs_link: root dir inode must exist");
+                  "tfs_unlink: root dir inode must exist");
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
         return -1;
     }
     inode_t *target_inode = inode_get(target_inum);
-    if (target_inode == NULL || target_inode->i_node_type != T_FILE) {
+    // The tecnico fs can only unlink files and symbolic links
+    if (target_inode == NULL || target_inode->i_node_type == T_DIRECTORY) {
         return -1;
     }
 
+    // Decreases the hard link counter and when it reaches 0, the file is
+    // deleted
     target_inode->i_hard_links--;
     if (target_inode->i_hard_links == 0) {
-        // TODO: fix this to work for subdirectories
         if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
             return -1;
         }
@@ -328,8 +338,6 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
 
-    // TODO: see if we should copy the BLOCK_SIZE even when the external file is
-    // bigger
     // Checks if the file fits in one block
     fseek(source_file, 0L, SEEK_END);
     long int to_read = ftell(source_file);

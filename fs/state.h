@@ -39,7 +39,10 @@ typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
 typedef struct {
     int of_inumber;
     size_t of_offset;
+    pthread_mutex_t lock;
 } open_file_entry_t;
+
+bool valid_file_content(int inumber);
 
 int state_init(tfs_params);
 int state_destroy(void);
@@ -50,8 +53,8 @@ int inode_create(inode_type n_type);
 void inode_delete(int inumber);
 inode_t *inode_get(int inumber);
 
-int clear_dir_entry(inode_t *inode, char const *sub_name);
 int add_dir_entry(inode_t *inode, char const *sub_name, int sub_inumber);
+int clear_dir_entry(inode_t *inode, char const *sub_name);
 int find_in_dir(inode_t const *inode, char const *sub_name);
 
 int data_block_alloc(void);
@@ -61,5 +64,6 @@ void *data_block_get(int block_number);
 int add_to_open_file_table(int inumber, size_t offset);
 void remove_from_open_file_table(int fhandle);
 open_file_entry_t *get_open_file_entry(int fhandle);
+bool is_file_open(int inumber);
 
 #endif // STATE_H

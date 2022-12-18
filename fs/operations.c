@@ -2,6 +2,7 @@
 #include "betterassert.h"
 #include "config.h"
 #include "state.h"
+#include "utils.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -39,14 +40,9 @@ int tfs_init(tfs_params const *params_ptr) {
     return 0;
 }
 
-int tfs_destroy() {
-    if (state_destroy() != 0) {
-        return -1;
-    }
-    return 0;
-}
+int tfs_destroy() { return state_destroy(); }
 
-static bool valid_pathname(char const *name) {
+static inline bool valid_pathname(char const *name) {
     return name != NULL && strlen(name) > 1 && name[0] == '/';
 }
 
@@ -216,7 +212,18 @@ int tfs_close(int fhandle) {
         return -1; // invalid fd
     }
 
+    ALWAYS_ASSERT(valid_file_content(file->of_inumber),
+                  "tfs_close: file content deleted before closing");
     remove_from_open_file_table(fhandle);
+
+    // Deletes unlinked files on the last close
+    inode_t *file_inode = inode_get(file->of_inumber);
+    if (file_inode == NULL) {
+        return -1;
+    }
+    if (file_inode->i_hard_links == 0 && is_file_open(file->of_inumber) == 0) {
+        inode_delete(file->of_inumber);
+    }
 
     return 0;
 }
@@ -312,14 +319,14 @@ int tfs_unlink(char const *target) {
     if (target_inode == NULL || target_inode->i_node_type == T_DIRECTORY) {
         return -1;
     }
+    if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
+        return -1;
+    }
 
-    // Decreases the hard link counter and when it reaches 0, the file is
-    // deleted
+    // Decreases the hard link counter and when it reaches 0 the file is
+    // deleted if it's not open
     target_inode->i_hard_links--;
-    if (target_inode->i_hard_links == 0) {
-        if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
-            return -1;
-        }
+    if (target_inode->i_hard_links == 0 && is_file_open(target_inum) == 0) {
         inode_delete(target_inum);
     }
 

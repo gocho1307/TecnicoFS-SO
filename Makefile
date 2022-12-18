@@ -22,7 +22,7 @@ TARGET_EXECS := $(patsubst %.c,%,$(wildcard tests/*.c))
 vpath # clears VPATH
 vpath %.h $(INCLUDE_DIRS)
 
-CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L
+CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L -pthread
 CFLAGS += $(INCLUDES)
 
 # Warnings
@@ -82,7 +82,7 @@ fmt: $(SOURCES) $(HEADERS)
 	$(CLANG_FORMAT) -i $^
 
 # Add dependency of target executables in TécnicoFS (to be linked with it)
-$(TARGET_EXECS): fs/operations.o fs/state.o
+$(TARGET_EXECS): fs/operations.o fs/state.o fs/utils.o
 # ^ Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule

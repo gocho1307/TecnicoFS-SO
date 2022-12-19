@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+static inline bool valid_pathname(char const *name) {
+    return name != NULL && strlen(name) > 1 && name[0] == '/';
+}
+
 tfs_params tfs_default_params() {
     tfs_params params = {
         .max_inode_count = 64,
@@ -41,10 +45,6 @@ int tfs_init(tfs_params const *params_ptr) {
 }
 
 int tfs_destroy() { return state_destroy(); }
-
-static inline bool valid_pathname(char const *name) {
-    return name != NULL && strlen(name) > 1 && name[0] == '/';
-}
 
 /**
  * Looks for a file.
@@ -136,6 +136,16 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
     // opened but it remains created
 }
 
+int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
+
+ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
+    return write_to_open_file(fhandle, buffer, to_write);
+}
+
+ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
+    return read_from_open_file(fhandle, buffer, len);
+}
+
 int tfs_sym_link(char const *target, char const *link) {
     // Checks if the path names are valid
     if (!valid_pathname(target) || !valid_pathname(link)) {
@@ -206,100 +216,6 @@ int tfs_link(char const *target, char const *link) {
     return 0;
 }
 
-int tfs_close(int fhandle) {
-    open_file_entry_t *file = get_open_file_entry(fhandle);
-    if (file == NULL) {
-        return -1; // invalid fd
-    }
-
-    ALWAYS_ASSERT(valid_file_content(file->of_inumber),
-                  "tfs_close: file content deleted before closing");
-    remove_from_open_file_table(fhandle);
-
-    // Deletes unlinked files on the last close
-    inode_t *file_inode = inode_get(file->of_inumber);
-    if (file_inode == NULL) {
-        return -1;
-    }
-    if (file_inode->i_hard_links == 0 && is_file_open(file->of_inumber) == 0) {
-        inode_delete(file->of_inumber);
-    }
-
-    return 0;
-}
-
-ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
-    open_file_entry_t *file = get_open_file_entry(fhandle);
-    if (file == NULL) {
-        return -1;
-    }
-
-    // From the open file table entry, we get the inode
-    inode_t *inode = inode_get(file->of_inumber);
-    ALWAYS_ASSERT(inode != NULL, "tfs_write: inode of open file deleted");
-
-    // Determine how many bytes to write
-    size_t block_size = state_block_size();
-    if (to_write + file->of_offset > block_size) {
-        to_write = block_size - file->of_offset;
-    }
-
-    if (to_write > 0) {
-        if (inode->i_size == 0) {
-            // If empty file, allocate new block
-            int bnum = data_block_alloc();
-            if (bnum == -1) {
-                return -1; // no space
-            }
-
-            inode->i_data_block = bnum;
-        }
-
-        void *block = data_block_get(inode->i_data_block);
-        ALWAYS_ASSERT(block != NULL, "tfs_write: data block deleted mid-write");
-
-        // Perform the actual write
-        memcpy(block + file->of_offset, buffer, to_write);
-
-        // The offset associated with the file handle is incremented accordingly
-        file->of_offset += to_write;
-        if (file->of_offset > inode->i_size) {
-            inode->i_size = file->of_offset;
-        }
-    }
-
-    return (ssize_t)to_write;
-}
-
-ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
-    open_file_entry_t *file = get_open_file_entry(fhandle);
-    if (file == NULL) {
-        return -1;
-    }
-
-    // From the open file table entry, we get the inode
-    inode_t const *inode = inode_get(file->of_inumber);
-    ALWAYS_ASSERT(inode != NULL, "tfs_read: inode of open file deleted");
-
-    // Determine how many bytes to read
-    size_t to_read = inode->i_size - file->of_offset;
-    if (to_read > len) {
-        to_read = len;
-    }
-
-    if (to_read > 0) {
-        void *block = data_block_get(inode->i_data_block);
-        ALWAYS_ASSERT(block != NULL, "tfs_read: data block deleted mid-read");
-
-        // Perform the actual read
-        memcpy(buffer, block + file->of_offset, to_read);
-        // The offset associated with the file handle is incremented accordingly
-        file->of_offset += to_read;
-    }
-
-    return (ssize_t)to_read;
-}
-
 int tfs_unlink(char const *target) {
     // Checks if the path names are valid
     if (!valid_pathname(target)) {
@@ -345,15 +261,6 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
 
-    // Checks if the file fits in one block
-    fseek(source_file, 0L, SEEK_END);
-    long int to_read = ftell(source_file);
-    if (to_read > state_block_size()) {
-        fclose(source_file); // since we return -1, we can ignore the result
-        return -1;
-    }
-    rewind(source_file);
-
     // Opens the destination file in the FS
     int dest_file = tfs_open(dest_path, TFS_O_CREAT | TFS_O_TRUNC);
     if (dest_file == -1) {
@@ -362,17 +269,16 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
     }
 
     // Buffers the file data
-    char buffer[to_read];
-    size_t read = fread(buffer, sizeof(char), (size_t)to_read, source_file);
-    if (read < to_read) {
-        // we are returning -1 so the return values are ignored
-        fclose(source_file);
-        tfs_close(dest_file);
-        return -1;
+    char buffer[1];
+    size_t read;
+    while ((read = fread(buffer, sizeof(char), 1, source_file)) > 0) {
+        // Writes the data into the file in TecnicoFS
+        if (tfs_write(dest_file, buffer, read) != read) {
+            fclose(source_file);
+            tfs_close(dest_file);
+            return -1;
+        }
     }
-
-    // Writes the data into the file in TecnicoFS
-    ssize_t written = tfs_write(dest_file, buffer, (size_t)to_read);
 
     // Closes the files
     if (fclose(source_file) != 0) {
@@ -380,9 +286,6 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
     if (tfs_close(dest_file) == -1) {
-        return -1;
-    }
-    if (written == -1) {
         return -1;
     }
 

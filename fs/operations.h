@@ -16,6 +16,15 @@ typedef struct {
 } tfs_params;
 
 /**
+ * TécnicoFS file opening modes.
+ */
+typedef enum {
+    TFS_O_CREAT = 0b001,
+    TFS_O_TRUNC = 0b010,
+    TFS_O_APPEND = 0b100,
+} tfs_file_mode_t;
+
+/**
  * Return a sane default set of parameters for tecnicofs.
  */
 tfs_params tfs_default_params();
@@ -33,15 +42,6 @@ int tfs_init(tfs_params const *params);
 int tfs_destroy();
 
 /**
- * TécnicoFS file opening modes.
- */
-typedef enum {
-    TFS_O_CREAT = 0b001,
-    TFS_O_TRUNC = 0b010,
-    TFS_O_APPEND = 0b100,
-} tfs_file_mode_t;
-
-/**
  * Open a file.
  *
  * Input:
@@ -54,29 +54,6 @@ typedef enum {
  * Returns file handle of the opened file if successful, -1 otherwise.
  */
 int tfs_open(char const *name, tfs_file_mode_t mode);
-
-/**
- * Create a symbolic link to a file.
- *
- * Input:
- *   - target: absolute path name of the link target
- *   - link: absolute path name of the link to be created
- *
- * Returns 0 if successful, -1 otherwise.
- */
-int tfs_sym_link(char const *target, char const *link);
-
-/**
- * Create a (hard) link to a file.
- *
- * Input:
- *   - target: absolute path name of the link target
- *   - link: absolute path name of the link to be created
- *
- * Returns 0 if successful, -1 otherwise.
- */
-int tfs_link(char const *target, char const *link);
-
 /**
  * Close a file.
  *
@@ -112,6 +89,28 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write);
  * be lower than 'len' if the file size was reached), or -1 in case of error.
  */
 ssize_t tfs_read(int fhandle, void *buffer, size_t len);
+
+/**
+ * Create a symbolic link to a file.
+ *
+ * Input:
+ *   - target: absolute path name of the link target
+ *   - link: absolute path name of the link to be created
+ *
+ * Returns 0 if successful, -1 otherwise.
+ */
+int tfs_sym_link(char const *target, char const *link);
+
+/**
+ * Create a (hard) link to a file.
+ *
+ * Input:
+ *   - target: absolute path name of the link target
+ *   - link: absolute path name of the link to be created
+ *
+ * Returns 0 if successful, -1 otherwise.
+ */
+int tfs_link(char const *target, char const *link);
 
 /**
  * Delete a link, or a file if the number of hard links reaches 0, that

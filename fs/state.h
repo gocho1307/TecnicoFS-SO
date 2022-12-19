@@ -9,18 +9,10 @@
 #include <sys/types.h>
 
 /**
- * Directory entry
- */
-typedef struct {
-    char d_name[MAX_FILE_NAME];
-    int d_inumber;
-} dir_entry_t;
-
-typedef enum { T_FILE, T_DIRECTORY, T_SYM_LINK } inode_type;
-
-/**
  * Inode
  */
+typedef enum { T_FILE, T_DIRECTORY, T_SYM_LINK } inode_type;
+
 typedef struct {
     inode_type i_node_type;
 
@@ -31,18 +23,24 @@ typedef struct {
     // in a more complete FS, more fields could exist here
 } inode_t;
 
-typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
+/**
+ * Directory entry
+ */
+typedef struct {
+    char d_name[MAX_FILE_NAME];
+    int d_inumber;
+} dir_entry_t;
 
 /**
  * Open file entry (in open file table)
  */
+typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
+
 typedef struct {
     int of_inumber;
     size_t of_offset;
     pthread_mutex_t lock;
 } open_file_entry_t;
-
-bool valid_file_content(int inumber);
 
 int state_init(tfs_params);
 int state_destroy(void);
@@ -62,7 +60,9 @@ void data_block_free(int block_number);
 void *data_block_get(int block_number);
 
 int add_to_open_file_table(int inumber, size_t offset);
-void remove_from_open_file_table(int fhandle);
+int remove_from_open_file_table(int fhandle);
+ssize_t write_to_open_file(int fhandle, void const *buffer, size_t to_write);
+ssize_t read_from_open_file(int fhandle, void *buffer, size_t len);
 open_file_entry_t *get_open_file_entry(int fhandle);
 bool is_file_open(int inumber);
 

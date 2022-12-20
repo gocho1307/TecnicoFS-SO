@@ -45,7 +45,7 @@ void write_contents(char const *path) {
 int main() {
     assert(tfs_init(NULL) != -1);
 
-    // Write to symlink and read original file
+    // Write to hard link and read original file
     {
         int f = tfs_open(target_path1, TFS_O_CREAT);
         assert(f != -1);
@@ -60,7 +60,7 @@ int main() {
     write_contents(link_path1);
     assert_contents_ok(target_path1);
 
-    // Write to original file and read through symlink
+    // Write to original file and read through hard link
     {
         int f = tfs_open(target_path2, TFS_O_CREAT);
         assert(f != -1);

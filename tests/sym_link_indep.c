@@ -23,7 +23,18 @@ int _open(size_t rep, size_t file_idx, tfs_file_mode_t mode) {
     return tfs_open(path, mode);
 }
 
-int _link(size_t rep_target, size_t file_idx_target, size_t rep_name,
+int _symbolic_link(size_t rep_target, size_t file_idx_target, size_t rep_name,
+          size_t file_idx_name) {
+    char target[MAX_PATH_SIZE];
+    _format_path(target, MAX_PATH_SIZE, rep_target, file_idx_target);
+
+    char name[MAX_PATH_SIZE];
+    _format_path(name, MAX_PATH_SIZE, rep_name, file_idx_name);
+
+    return tfs_sym_link(target, name);
+}
+
+int _hard_link(size_t rep_target, size_t file_idx_target, size_t rep_name,
           size_t file_idx_name) {
     char target[MAX_PATH_SIZE];
     _format_path(target, MAX_PATH_SIZE, rep_target, file_idx_target);
@@ -80,21 +91,16 @@ void run_test(size_t rep) {
         assert_empty_file(rep, i);
     }
 
-    // delete half the links
-    for (size_t i = FILE_COUNT / 2; i < FILE_COUNT; i++) {
-        assert(_unlink(rep, i) != -1);
-    }
-
     // write in one of the links
-    write_contents(rep, 1);
+    write_contents(rep, 3);
 
     // confirm that the others see the write
-    for (size_t i = 0; i < FILE_COUNT / 2; i++) {
+    for (size_t i = 0; i < FILE_COUNT; i++) {
         assert_contents_ok(rep, i);
     }
 
     // finish removing links
-    for (size_t i = 0; i < FILE_COUNT / 2; i++) {
+    for (size_t i = 0; i < FILE_COUNT; i++) {
         assert(_unlink(rep, i) != -1);
     }
 }
@@ -105,10 +111,12 @@ int main() {
     for (size_t rep = 0; rep < FILE_COUNT; rep++) {
         // create original file
         {
-            int fd = _open(rep, rep, TFS_O_CREAT);
+            int fd = _open(rep + 100, rep, TFS_O_CREAT);
             assert(fd != -1);
             assert(tfs_close(fd) != -1);
         }
+
+        assert(_hard_link(rep + 100, rep, rep, rep) != -1);
 
         // create links
         for (size_t i = 0; i < FILE_COUNT; i++) {
@@ -120,10 +128,10 @@ int main() {
             // the previously linked name
             if (i == 0) {
                 // no links exist yet, link to the original
-                assert(_link(rep, rep, rep, i) != -1);
+                assert(_symbolic_link(rep, rep, rep, i) != -1);
             } else {
                 // link to the link created in the previous iteration
-                assert(_link(rep, i - 1, rep, i) != -1);
+                assert(_symbolic_link(rep, i - 1, rep, i) != -1);
             }
         }
 

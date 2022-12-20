@@ -11,17 +11,18 @@ int main() {
     char *path_src1 = "tests/file_to_copy_many_different_characters.txt";
     char *path_src2 = "tests/file_to_copy_very_small.txt";
     char buffer[600];
+    memset(buffer, 0, sizeof(buffer));
 
     assert(tfs_init(NULL) != -1);
 
     int f, t;
     ssize_t r;
 
-    // Copy into file that already has data in the fs
+    // Copy normal file into fs
     f = tfs_copy_from_external_fs(path_src2, path_copied_file);
     assert(f != -1);
 
-    f = tfs_open(path_copied_file, TFS_O_CREAT);
+    f = tfs_open(path_copied_file, 0);
     assert(f != -1);
 
     r = tfs_read(f, buffer, sizeof(buffer) - 1);
@@ -30,13 +31,13 @@ int main() {
 
     t = tfs_close(f);
     assert(t != -1);
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, sizeof(buffer) - 1);
 
-    // Copy normal file into fs
+    // Copy into file that already has data in the fs
     f = tfs_copy_from_external_fs(path_src1, path_copied_file);
     assert(f != -1);
 
-    f = tfs_open(path_copied_file, TFS_O_CREAT);
+    f = tfs_open(path_copied_file, 0);
     assert(f != -1);
 
     r = tfs_read(f, buffer, sizeof(buffer) - 1);

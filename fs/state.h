@@ -39,7 +39,7 @@ typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
 typedef struct {
     int of_inumber;
     size_t of_offset;
-    pthread_mutex_t lock;
+    pthread_mutex_t mutex;
 } open_file_entry_t;
 
 int state_init(tfs_params);

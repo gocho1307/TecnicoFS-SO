@@ -90,6 +90,8 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         inode_t *inode = inode_get(inum);
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
+        ALWAYS_ASSERT(inode->i_node_type != T_DIRECTORY,
+                      "tfs_open: directories cannot be opened this way");
 
         // If the file is a symbolic link, it opens the stored file path
         if (inode->i_node_type == T_SYM_LINK) {
@@ -147,8 +149,10 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 }
 
 int tfs_sym_link(char const *target, char const *link) {
-    // Checks if the path names are valid
-    if (!valid_pathname(target) || !valid_pathname(link)) {
+    // Checks if the path names are valid (the sym link cannot be created to
+    // itself)
+    if (!valid_pathname(target) || !valid_pathname(link) ||
+        !strcmp(target, link)) {
         return -1;
     }
 
@@ -232,9 +236,11 @@ int tfs_unlink(char const *target) {
     }
     inode_t *target_inode = inode_get(target_inum);
     // The tecnico fs can only unlink files and symbolic links
-    if (target_inode == NULL || target_inode->i_node_type == T_DIRECTORY) {
+    if (target_inode == NULL) {
         return -1;
     }
+    ALWAYS_ASSERT(target_inode->i_node_type != T_DIRECTORY,
+                  "tfs_unlink: directories cannot be unlinked");
     if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
         return -1;
     }
@@ -250,8 +256,8 @@ int tfs_unlink(char const *target) {
 }
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
-    // Checks if the path name is valid
-    if (!valid_pathname(dest_path)) {
+    // Checks if the path name is valid and if source path is non null
+    if (!valid_pathname(dest_path) || source_path == NULL) {
         return -1;
     }
 

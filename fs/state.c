@@ -289,6 +289,32 @@ int inode_create(inode_type i_type) {
     return inumber;
 }
 
+int inode_truncate(int inumber) {
+    insert_delay();
+    insert_delay();
+
+    if (!valid_inumber(inumber)) {
+        return -1;
+    }
+
+    mutex_lock(&freeinode_ts_mutex);
+    if (freeinode_ts[inumber] == FREE) {
+        mutex_unlock(&freeinode_ts_mutex);
+        return -1;
+    }
+
+    rwlock_wrlock(&inode_locks[inumber]);
+    inode_t *inode = &inode_table[inumber];
+    if (inode->i_size > 0) {
+        data_block_free(inode->i_data_block);
+        inode->i_size = 0;
+    }
+    rwlock_unlock(&inode_locks[inumber]);
+    mutex_unlock(&freeinode_ts_mutex);
+
+    return 0;
+}
+
 /**
  * Delete an inode.
  *
@@ -525,7 +551,9 @@ void data_block_free(int block_number) {
 
     insert_delay(); // simulate storage access delay to free_blocks
 
+    mutex_lock(&free_blocks_mutex);
     free_blocks[block_number] = FREE;
+    mutex_unlock(&free_blocks_mutex);
 }
 
 /**
@@ -595,6 +623,8 @@ int remove_from_open_file_table(int fhandle) {
         return -1; // invalid fd
     }
 
+    mutex_lock(&free_open_file_entries_mutex);
+    mutex_lock(&file->mutex);
     ALWAYS_ASSERT(
         valid_file_content(file->of_inumber),
         "remove_from_open_file_table: file content deleted before closing");
@@ -602,21 +632,23 @@ int remove_from_open_file_table(int fhandle) {
     ALWAYS_ASSERT(valid_file_handle(fhandle),
                   "remove_from_open_file_table: file handle must be valid");
 
-    mutex_lock(&free_open_file_entries_mutex);
     ALWAYS_ASSERT(free_open_file_entries[fhandle] == TAKEN,
                   "remove_from_open_file_table: file handle must be taken");
 
     free_open_file_entries[fhandle] = FREE;
-    mutex_unlock(&free_open_file_entries_mutex);
 
     // Deletes unlinked files on the last close
     inode_t *file_inode = inode_get(file->of_inumber);
     if (file_inode == NULL) {
+        mutex_unlock(&file->mutex);
+        mutex_unlock(&free_open_file_entries_mutex);
         return -1;
     }
     if (file_inode->i_hard_links == 0 && is_file_open(file->of_inumber) == 0) {
         inode_delete(file->of_inumber);
     }
+    mutex_unlock(&file->mutex);
+    mutex_unlock(&free_open_file_entries_mutex);
 
     return 0;
 }

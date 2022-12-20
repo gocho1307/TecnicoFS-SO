@@ -12,6 +12,8 @@ int main() {
     char *path_copied_file_link2 = "/l2";
     char *path_src = "tests/file_to_copy.txt";
     char buffer1[40], buffer2[40];
+    memset(buffer1, 0, 40);
+    memset(buffer2, 0, 40);
 
     assert(tfs_init(NULL) != -1);
 

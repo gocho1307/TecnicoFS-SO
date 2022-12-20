@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static pthread_mutex_t open_mutex;
+
 static inline bool valid_pathname(char const *name) {
     return name != NULL && strlen(name) > 1 && name[0] == '/';
 }
@@ -31,6 +33,8 @@ int tfs_init(tfs_params const *params_ptr) {
         params = tfs_default_params();
     }
 
+    mutex_init(&open_mutex);
+
     if (state_init(params) != 0) {
         return -1;
     }
@@ -44,7 +48,11 @@ int tfs_init(tfs_params const *params_ptr) {
     return 0;
 }
 
-int tfs_destroy() { return state_destroy(); }
+int tfs_destroy() {
+    mutex_destroy(&open_mutex);
+
+    return state_destroy();
+}
 
 /**
  * Looks for a file.
@@ -82,11 +90,13 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_open: root dir inode must exist");
+    mutex_lock(&open_mutex);
     int inum = tfs_lookup(name, root_dir_inode);
     size_t offset = 0;
 
     if (inum >= 0) {
         // The file already exists
+        mutex_unlock(&open_mutex);
         inode_t *inode = inode_get(inum);
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
@@ -103,10 +113,7 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
 
         // Truncate (if requested)
         if (mode & TFS_O_TRUNC) {
-            if (inode->i_size > 0) {
-                data_block_free(inode->i_data_block);
-                inode->i_size = 0;
-            }
+            inode_truncate(inum);
         }
         // Determine initial offset
         if (mode & TFS_O_APPEND) {
@@ -117,15 +124,19 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         // Create inode
         inum = inode_create(T_FILE);
         if (inum == -1) {
+            mutex_unlock(&open_mutex);
             return -1; // no space in inode table
         }
 
         // Add entry in the root directory
         if (add_dir_entry(root_dir_inode, name + 1, inum) == -1) {
+            mutex_unlock(&open_mutex);
             inode_delete(inum);
             return -1; // no space in directory
         }
+        mutex_unlock(&open_mutex);
     } else {
+        mutex_unlock(&open_mutex);
         return -1;
     }
 

@@ -29,7 +29,7 @@ LDFLAGS += -pthread
 # LDFLAGS += -fsanitize=undefined
 # LDFLAGS += -fsanitize=address
 
-CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L
+CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L -fsanitize=thread
 CFLAGS += $(INCLUDES)
 
 # Warnings

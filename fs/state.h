@@ -54,7 +54,6 @@ int state_destroy(void);
 size_t state_block_size(void);
 
 int inode_create(inode_type n_type);
-int inode_truncate(int inumber);
 void inode_delete(int inumber);
 inode_t *inode_get(int inumber);
 

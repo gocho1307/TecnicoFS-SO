@@ -106,22 +106,28 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         ALWAYS_ASSERT(inode->i_node_type != T_DIRECTORY,
                       "tfs_open: directories cannot be opened this way");
 
+        rwlock_wrlock(&inode_locks[inum]);
         // If the file is a symbolic link, it opens the stored file path
         if (inode->i_node_type == T_SYM_LINK) {
             char *target = (char *)data_block_get(inode->i_data_block);
             ALWAYS_ASSERT(target != NULL,
                           "tfs_open: data block deleted mid-read");
+            rwlock_unlock(&inode_locks[inum]);
             return tfs_open(target, mode);
         }
 
         // Truncate (if requested)
         if (mode & TFS_O_TRUNC) {
-            inode_truncate(inum);
+            if (inode->i_size > 0) {
+                data_block_free(inode->i_data_block);
+                inode->i_size = 0;
+            }
         }
         // Determine initial offset
         if (mode & TFS_O_APPEND) {
             offset = inode->i_size;
         }
+        rwlock_unlock(&inode_locks[inum]);
     } else if (mode & TFS_O_CREAT) {
         // The file does not exist; the mode specified that it should be created
         // Create inode
@@ -233,7 +239,9 @@ int tfs_link(char const *target, char const *link) {
         rwlock_unlock(&link_lock);
         return -1;
     }
+    rwlock_wrlock(&inode_locks[target_inum]);
     target_inode->i_hard_links++;
+    rwlock_unlock(&inode_locks[target_inum]);
     rwlock_unlock(&link_lock);
 
     return 0;
@@ -268,12 +276,14 @@ int tfs_unlink(char const *target) {
         rwlock_unlock(&link_lock);
         return -1;
     }
+    mutex_lock(&free_open_file_entries_mutex);
     // Decreases the hard link counter and when it reaches 0 the file is
     // deleted if it's not open
     target_inode->i_hard_links--;
     if (target_inode->i_hard_links == 0 && is_file_open(target_inum) == 0) {
         inode_delete(target_inum);
     }
+    mutex_unlock(&free_open_file_entries_mutex);
     rwlock_unlock(&link_lock);
 
     return 0;

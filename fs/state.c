@@ -17,7 +17,7 @@ static tfs_params fs_params;
 
 // Inode table
 static inode_t *inode_table;
-static pthread_rwlock_t *inode_locks;
+pthread_rwlock_t *inode_locks;
 static allocation_state_t *freeinode_ts;
 static pthread_rwlock_t freeinode_ts_lock;
 
@@ -287,37 +287,6 @@ int inode_create(inode_type i_type) {
     rwlock_unlock(&freeinode_ts_lock);
 
     return inumber;
-}
-
-/**
- * Truncates an inode by freeing its data block and setting the size to 0.
- *
- * Input:
- *   - inumber: inode's number
- */
-int inode_truncate(int inumber) {
-    // simulate storage access delay (to inode and freeinode_ts)
-    insert_delay();
-    insert_delay();
-
-    ALWAYS_ASSERT(valid_inumber(inumber), "inode_truncate: invalid inumber");
-
-    rwlock_rdlock(&freeinode_ts_lock);
-    if (freeinode_ts[inumber] == FREE) {
-        rwlock_unlock(&freeinode_ts_lock);
-        return -1;
-    }
-
-    rwlock_wrlock(&inode_locks[inumber]);
-    inode_t *inode = &inode_table[inumber];
-    if (inode->i_size > 0) {
-        data_block_free(inode->i_data_block);
-        inode->i_size = 0;
-    }
-    rwlock_unlock(&inode_locks[inumber]);
-    rwlock_unlock(&freeinode_ts_lock);
-
-    return 0;
 }
 
 /**

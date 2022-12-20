@@ -12,6 +12,7 @@
  * External mutexes/locks
  */
 extern pthread_mutex_t free_open_file_entries_mutex;
+extern pthread_rwlock_t *inode_locks;
 
 /**
  * Inode

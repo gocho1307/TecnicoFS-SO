@@ -25,11 +25,12 @@ vpath %.h $(INCLUDE_DIRS)
 # Multi-threading related flags
 LDFLAGS += -pthread
 # fsanitize flags
+# CFLAGS += -fsanitize=thread
 # LDFLAGS += -fsanitize=thread
 # LDFLAGS += -fsanitize=undefined
 # LDFLAGS += -fsanitize=address
 
-CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L -fsanitize=thread
+CFLAGS += -std=c17 -D_POSIX_C_SOURCE=200809L
 CFLAGS += $(INCLUDES)
 
 # Warnings

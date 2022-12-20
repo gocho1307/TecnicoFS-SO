@@ -28,9 +28,10 @@ void *write_external_file(void *input);
 void *copy_external_thread();
 void assert_contents_ok(int file_id);
 
-/* Tests if the external FS files files are copied to the TécnicoFS
- * concurrently. After copying, compares the contents between the original and
- * the copy, deleting the copy. */
+/**
+ * Tests if the external FS files files are copied to the TécnicoFS
+ * concurrently.
+ */
 int main() {
     assert(tfs_init(NULL) != -1);
 

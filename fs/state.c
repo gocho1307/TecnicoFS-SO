@@ -615,15 +615,21 @@ int remove_from_open_file_table(int fhandle) {
 
     free_open_file_entries[fhandle] = FREE;
 
-    // Deletes unlinked files on the last close
+    // Deletes unlinked files on the last close (locks the inode because it
+    // needs to read the hard link counter)
+    rwlock_rdlock(&inode_locks[file->of_inumber]);
     inode_t *file_inode = inode_get(file->of_inumber);
     if (file_inode == NULL) {
+        rwlock_unlock(&inode_locks[file->of_inumber]);
         mutex_unlock(&file->mutex);
         mutex_unlock(&free_open_file_entries_mutex);
         return -1;
     }
     if (file_inode->i_hard_links == 0 && is_file_open(file->of_inumber) == 0) {
+        rwlock_unlock(&inode_locks[file->of_inumber]);
         inode_delete(file->of_inumber);
+    } else {
+        rwlock_unlock(&inode_locks[file->of_inumber]);
     }
     mutex_unlock(&file->mutex);
     mutex_unlock(&free_open_file_entries_mutex);
@@ -653,9 +659,9 @@ ssize_t write_to_open_file(int fhandle, void const *buffer, size_t to_write) {
     mutex_lock(&file->mutex);
 
     // From the open file table entry, we get the inode
+    rwlock_wrlock(&inode_locks[file->of_inumber]);
     inode_t *inode = inode_get(file->of_inumber);
     ALWAYS_ASSERT(inode != NULL, "tfs_write: inode of open file deleted");
-    rwlock_wrlock(&inode_locks[file->of_inumber]);
 
     // Just to make sure that the offset isn't out of bounds
     if (file->of_offset > inode->i_size) {
@@ -721,9 +727,9 @@ ssize_t read_from_open_file(int fhandle, void *buffer, size_t len) {
     mutex_lock(&file->mutex);
 
     // From the open file table entry, we get the inode
+    rwlock_rdlock(&inode_locks[file->of_inumber]);
     inode_t const *inode = inode_get(file->of_inumber);
     ALWAYS_ASSERT(inode != NULL, "tfs_read: inode of open file deleted");
-    rwlock_rdlock(&inode_locks[file->of_inumber]);
 
     // Just to make sure that write_to_open_file doesn't make the offset out of
     // bounds

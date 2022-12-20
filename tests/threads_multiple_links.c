@@ -62,7 +62,7 @@ void assert_contents_ok(size_t rep, size_t file_idx, int thread_i) {
     uint8_t buffer[sizeof(file_contents)];
     memset(buffer, 0, sizeof(buffer));
     ssize_t r = tfs_read(f, buffer, sizeof(buffer) - 1);
-    assert(r == 3);
+    assert(r == THREAD_COUNT);
     assert(memcmp(buffer, file_contents, sizeof(buffer)) == 0);
 
     assert(tfs_close(f) != -1);

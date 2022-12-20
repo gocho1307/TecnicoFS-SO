@@ -93,6 +93,8 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_open: root dir inode must exist");
+    // We need to lock until we make sure the file is created if it doesn't
+    // exist
     mutex_lock(&open_mutex);
     int inum = tfs_lookup(name, root_dir_inode);
     size_t offset = 0;
@@ -100,13 +102,13 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
     if (inum >= 0) {
         // The file already exists
         mutex_unlock(&open_mutex);
+        rwlock_wrlock(&inode_locks[inum]);
         inode_t *inode = inode_get(inum);
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
         ALWAYS_ASSERT(inode->i_node_type != T_DIRECTORY,
                       "tfs_open: directories cannot be opened this way");
 
-        rwlock_wrlock(&inode_locks[inum]);
         // If the file is a symbolic link, it opens the stored file path
         if (inode->i_node_type == T_SYM_LINK) {
             char *target = (char *)data_block_get(inode->i_data_block);
@@ -176,19 +178,23 @@ int tfs_sym_link(char const *target, char const *link) {
         return -1;
     }
 
+    rwlock_rdlock(&link_lock);
     // Creates the symbolic link inode and alocates memory for the target path
     int link_inum = inode_create(T_SYM_LINK);
     if (link_inum == -1) {
+        rwlock_unlock(&link_lock);
         return -1;
     }
     inode_t *link_inode = inode_get(link_inum);
     if (link_inode == NULL) {
         inode_delete(link_inum);
+        rwlock_unlock(&link_lock);
         return -1;
     }
     int bnum = data_block_alloc();
     if (bnum == -1) {
         inode_delete(link_inum);
+        rwlock_unlock(&link_lock);
         return -1;
     }
     link_inode->i_data_block = bnum;
@@ -204,8 +210,10 @@ int tfs_sym_link(char const *target, char const *link) {
                   "tfs_sym_link: root dir inode must exist");
     if (add_dir_entry(root_dir_inode, link + 1, link_inum) == -1) {
         inode_delete(link_inum);
+        rwlock_unlock(&link_lock);
         return -1;
     }
+    rwlock_unlock(&link_lock);
 
     return 0;
 }
@@ -278,10 +286,15 @@ int tfs_unlink(char const *target) {
     }
     mutex_lock(&free_open_file_entries_mutex);
     // Decreases the hard link counter and when it reaches 0 the file is
-    // deleted if it's not open
+    // deleted if it's not open (needs to lock inode because it changed the hard
+    // link counter)
+    rwlock_wrlock(&inode_locks[target_inum]);
     target_inode->i_hard_links--;
     if (target_inode->i_hard_links == 0 && is_file_open(target_inum) == 0) {
+        rwlock_unlock(&inode_locks[target_inum]);
         inode_delete(target_inum);
+    } else {
+        rwlock_unlock(&inode_locks[target_inum]);
     }
     mutex_unlock(&free_open_file_entries_mutex);
     rwlock_unlock(&link_lock);

@@ -17,13 +17,15 @@ int main() {
 
     assert(tfs_sym_link(file_path, link_path) != -1);
 
-    assert(tfs_sym_link(link_path, link_path) == -1);
-
     assert(tfs_unlink(file_path) != -1);
 
     assert(tfs_unlink(link_path) != -1);
 
-    assert(tfs_unlink(link_path) == -1);
+    assert(tfs_unlink("/") == -1);
+
+    assert(tfs_unlink("/wrong-file") == -1);
+
+    assert(tfs_unlink("error-file-name") == -1);
 
     assert(tfs_destroy() != -1);
 

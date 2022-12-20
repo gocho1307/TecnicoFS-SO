@@ -51,9 +51,14 @@ int _unlink(size_t rep, size_t file_idx) {
     return tfs_unlink(path);
 }
 
-void assert_contents_ok(size_t rep, size_t file_idx) {
+void assert_contents_ok(size_t rep, size_t file_idx, bool ok_state) {
     int f = _open(rep, file_idx, 0);
-    assert(f != -1);
+    if (ok_state) {
+        assert(f != -1);
+    } else {
+        assert(f == -1);
+        return;
+    }
 
     uint8_t buffer[sizeof(file_contents)];
     assert(tfs_read(f, buffer, sizeof(buffer)) == sizeof(buffer));
@@ -83,6 +88,7 @@ void write_contents(size_t rep, size_t file_idx) {
 }
 
 void run_test(size_t rep) {
+    bool ok_state = true;
     // _open(rep, <number from 0 to FILE_COUNT>, mode) opens one of the
     // alternative names to the same file
 
@@ -94,13 +100,21 @@ void run_test(size_t rep) {
     // write in one of the links
     write_contents(rep, 3);
 
+    // delete half the links
+    for (size_t i = FILE_COUNT / 2; i < FILE_COUNT; i++) {
+        assert(_unlink(rep, i) != -1);
+        if (rep == i) {
+            ok_state = false;
+        }
+    }
+
     // confirm that the others see the write
-    for (size_t i = 0; i < FILE_COUNT; i++) {
-        assert_contents_ok(rep, i);
+    for (size_t i = 0; i < FILE_COUNT / 2; i++) {
+        assert_contents_ok(rep, i, ok_state);
     }
 
     // finish removing links
-    for (size_t i = 0; i < FILE_COUNT; i++) {
+    for (size_t i = 0; i < FILE_COUNT / 2; i++) {
         assert(_unlink(rep, i) != -1);
     }
 }

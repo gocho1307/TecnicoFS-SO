@@ -17,6 +17,7 @@ void assert_contents_ok(char const *path) {
     assert(f != -1);
 
     uint8_t buffer[sizeof(file_contents)];
+    memset(buffer, 0, sizeof(buffer));
     assert(tfs_read(f, buffer, sizeof(buffer)) == sizeof(buffer));
     assert(memcmp(buffer, file_contents, sizeof(buffer)) == 0);
 

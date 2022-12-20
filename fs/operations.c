@@ -10,6 +10,7 @@
 #include <string.h>
 
 static pthread_mutex_t open_mutex;
+static pthread_rwlock_t link_lock;
 
 static inline bool valid_pathname(char const *name) {
     return name != NULL && strlen(name) > 1 && name[0] == '/';
@@ -34,6 +35,7 @@ int tfs_init(tfs_params const *params_ptr) {
     }
 
     mutex_init(&open_mutex);
+    rwlock_init(&link_lock);
 
     if (state_init(params) != 0) {
         return -1;
@@ -50,6 +52,7 @@ int tfs_init(tfs_params const *params_ptr) {
 
 int tfs_destroy() {
     mutex_destroy(&open_mutex);
+    rwlock_destroy(&link_lock);
 
     return state_destroy();
 }
@@ -207,26 +210,31 @@ int tfs_link(char const *target, char const *link) {
         return -1;
     }
 
+    rwlock_rdlock(&link_lock);
     // Adds a directory entry of the hard link
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_link: root dir inode must exist");
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
-        return -1;
-    }
-    if (add_dir_entry(root_dir_inode, link + 1, target_inum) == -1) {
+        rwlock_unlock(&link_lock);
         return -1;
     }
 
+    if (add_dir_entry(root_dir_inode, link + 1, target_inum) == -1) {
+        rwlock_unlock(&link_lock);
+        return -1;
+    }
     // Makes sure to not create hard links to symbolic links and increments the
     // number of hard links on the target inode
     inode_t *target_inode = inode_get(target_inum);
     if (target_inode == NULL || target_inode->i_node_type == T_SYM_LINK) {
         clear_dir_entry(root_dir_inode, link + 1);
+        rwlock_unlock(&link_lock);
         return -1;
     }
     target_inode->i_hard_links++;
+    rwlock_unlock(&link_lock);
 
     return 0;
 }
@@ -237,31 +245,36 @@ int tfs_unlink(char const *target) {
         return -1;
     }
 
+    rwlock_wrlock(&link_lock);
     // Gets the target file inode
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_unlink: root dir inode must exist");
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
+        rwlock_unlock(&link_lock);
         return -1;
     }
     inode_t *target_inode = inode_get(target_inum);
     // The tecnico fs can only unlink files and symbolic links
     if (target_inode == NULL) {
+        rwlock_unlock(&link_lock);
         return -1;
     }
     ALWAYS_ASSERT(target_inode->i_node_type != T_DIRECTORY,
                   "tfs_unlink: directories cannot be unlinked");
+
     if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
+        rwlock_unlock(&link_lock);
         return -1;
     }
-
     // Decreases the hard link counter and when it reaches 0 the file is
     // deleted if it's not open
     target_inode->i_hard_links--;
     if (target_inode->i_hard_links == 0 && is_file_open(target_inum) == 0) {
         inode_delete(target_inum);
     }
+    rwlock_unlock(&link_lock);
 
     return 0;
 }

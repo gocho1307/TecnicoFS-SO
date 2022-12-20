@@ -52,8 +52,7 @@ int main() {
 
     // copy from external fs concurrently
     for (int i = 0; i < THREAD_COUNT; ++i) {
-        assert(pthread_create(&tid2[i], NULL, copy_external_thread,
-                              NULL) == 0);
+        assert(pthread_create(&tid2[i], NULL, copy_external_thread, NULL) == 0);
     }
 
     for (int i = 0; i < THREAD_COUNT; ++i) {
@@ -104,6 +103,7 @@ void assert_contents_ok(int file_id) {
     assert(fd != -1);
 
     char buffer[BUFFER_LEN];
+    memset(buffer, 0, BUFFER_LEN);
     ssize_t bytes_read = tfs_read(fd, buffer, sizeof(buffer));
     assert(bytes_read == strlen(input_files_content[file_id]));
     assert(!memcmp(buffer, input_files_content[file_id],

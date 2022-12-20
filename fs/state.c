@@ -19,7 +19,7 @@ static tfs_params fs_params;
 static inode_t *inode_table;
 static pthread_rwlock_t *inode_locks;
 static allocation_state_t *freeinode_ts;
-static pthread_mutex_t freeinode_ts_mutex;
+static pthread_rwlock_t freeinode_ts_lock;
 
 // Data blocks
 static char *fs_data; // # blocks * block size
@@ -30,7 +30,7 @@ static pthread_mutex_t free_blocks_mutex;
 // Volatile FS state
 static open_file_entry_t *open_file_table;
 static allocation_state_t *free_open_file_entries;
-static pthread_mutex_t free_open_file_entries_mutex;
+pthread_mutex_t free_open_file_entries_mutex;
 
 // Convenience macros
 #define INODE_TABLE_SIZE (fs_params.max_inode_count)
@@ -125,7 +125,7 @@ int state_init(tfs_params params) {
         freeinode_ts[i] = FREE;
         rwlock_init(&inode_locks[i]);
     }
-    mutex_init(&freeinode_ts_mutex);
+    rwlock_init(&freeinode_ts_lock);
 
     for (size_t i = 0; i < DATA_BLOCKS; i++) {
         free_blocks[i] = FREE;
@@ -155,7 +155,7 @@ int state_destroy(void) {
     for (size_t i = 0; i < INODE_TABLE_SIZE; i++) {
         rwlock_destroy(&inode_locks[i]);
     }
-    mutex_destroy(&freeinode_ts_mutex);
+    rwlock_destroy(&freeinode_ts_lock);
 
     for (size_t i = 0; i < DATA_BLOCKS; i++) {
         rwlock_destroy(&dir_locks[i]);
@@ -235,10 +235,10 @@ static int inode_alloc(void) {
  *   - (if creating a directory) No free data blocks.
  */
 int inode_create(inode_type i_type) {
-    mutex_lock(&freeinode_ts_mutex);
+    rwlock_wrlock(&freeinode_ts_lock);
     int inumber = inode_alloc();
     if (inumber == -1) {
-        mutex_unlock(&freeinode_ts_mutex);
+        rwlock_unlock(&freeinode_ts_lock);
         return -1; // no free slots in inode table
     }
 
@@ -258,7 +258,7 @@ int inode_create(inode_type i_type) {
 
             // run regular deletion process
             inode_delete(inumber);
-            mutex_unlock(&freeinode_ts_mutex);
+            rwlock_unlock(&freeinode_ts_lock);
             return -1;
         }
 
@@ -280,26 +280,31 @@ int inode_create(inode_type i_type) {
         inode_table[inumber].i_data_block = -1;
         break;
     default:
-        mutex_unlock(&freeinode_ts_mutex);
+        rwlock_unlock(&freeinode_ts_lock);
         PANIC("inode_create: unknown file type");
     }
     inode_table[inumber].i_hard_links = 1;
-    mutex_unlock(&freeinode_ts_mutex);
+    rwlock_unlock(&freeinode_ts_lock);
 
     return inumber;
 }
 
+/**
+ * Truncates an inode by freeing its data block and setting the size to 0.
+ *
+ * Input:
+ *   - inumber: inode's number
+ */
 int inode_truncate(int inumber) {
+    // simulate storage access delay (to inode and freeinode_ts)
     insert_delay();
     insert_delay();
 
-    if (!valid_inumber(inumber)) {
-        return -1;
-    }
+    ALWAYS_ASSERT(valid_inumber(inumber), "inode_truncate: invalid inumber");
 
-    mutex_lock(&freeinode_ts_mutex);
+    rwlock_rdlock(&freeinode_ts_lock);
     if (freeinode_ts[inumber] == FREE) {
-        mutex_unlock(&freeinode_ts_mutex);
+        rwlock_unlock(&freeinode_ts_lock);
         return -1;
     }
 
@@ -310,7 +315,7 @@ int inode_truncate(int inumber) {
         inode->i_size = 0;
     }
     rwlock_unlock(&inode_locks[inumber]);
-    mutex_unlock(&freeinode_ts_mutex);
+    rwlock_unlock(&freeinode_ts_lock);
 
     return 0;
 }
@@ -328,7 +333,7 @@ void inode_delete(int inumber) {
 
     ALWAYS_ASSERT(valid_inumber(inumber), "inode_delete: invalid inumber");
 
-    mutex_lock(&freeinode_ts_mutex);
+    rwlock_wrlock(&freeinode_ts_lock);
     ALWAYS_ASSERT(freeinode_ts[inumber] == TAKEN,
                   "inode_delete: inode already freed");
 
@@ -342,7 +347,7 @@ void inode_delete(int inumber) {
 
     freeinode_ts[inumber] = FREE;
     rwlock_unlock(&inode_locks[inumber]);
-    mutex_unlock(&freeinode_ts_mutex);
+    rwlock_unlock(&freeinode_ts_lock);
 }
 
 /**
@@ -591,6 +596,10 @@ int add_to_open_file_table(int inumber, size_t offset) {
     }
 
     mutex_lock(&free_open_file_entries_mutex);
+    // We have to recheck this because the file could have been deleted
+    if (freeinode_ts[inumber] != TAKEN) {
+        return -1;
+    }
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (free_open_file_entries[i] == FREE) {
             free_open_file_entries[i] = TAKEN;

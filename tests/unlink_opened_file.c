@@ -11,6 +11,8 @@ int main() {
     const char *to_write = "SSSS!";
     int fd[OPENED_FILES];
     char buffer[1], bigger_buffer[6];
+    memset(buffer, 0, 1);
+    memset(bigger_buffer, 0, 6);
 
     assert(tfs_init(NULL) != -1);
 

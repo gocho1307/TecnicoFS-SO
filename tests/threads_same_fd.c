@@ -98,6 +98,7 @@ void *count_letters(void *input) {
     int *counts = calloc(THREAD_COUNT, sizeof(int));
     assert(counts != NULL);
     char buffer[BUFFER_LEN];
+    memset(buffer, 0, BUFFER_LEN);
 
     ssize_t bytes_read = tfs_read(file_id, buffer, BUFFER_LEN);
 

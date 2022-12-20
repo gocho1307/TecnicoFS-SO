@@ -61,6 +61,7 @@ void assert_contents_ok(size_t rep, size_t file_idx, bool ok_state) {
     }
 
     uint8_t buffer[sizeof(file_contents)];
+    memset(buffer, 0, sizeof(buffer));
     assert(tfs_read(f, buffer, sizeof(buffer)) == sizeof(buffer));
     assert(memcmp(buffer, file_contents, sizeof(buffer)) == 0);
 
@@ -72,6 +73,7 @@ void assert_empty_file(size_t rep, size_t file_idx) {
     assert(f != -1);
 
     uint8_t buffer[sizeof(file_contents)];
+    memset(buffer, 0, sizeof(buffer));
     assert(tfs_read(f, buffer, sizeof(buffer)) == 0);
 
     assert(tfs_close(f) != -1);

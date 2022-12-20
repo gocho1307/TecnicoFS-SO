@@ -9,6 +9,7 @@ int main() {
     char *path_copied_file = "/f1";
     char *path_src = "tests/file_to_copy.txt";
     char buffer[40];
+    memset(buffer, 0, 40);
 
     assert(tfs_init(NULL) != -1);
 

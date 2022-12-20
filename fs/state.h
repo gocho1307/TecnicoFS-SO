@@ -9,6 +9,11 @@
 #include <sys/types.h>
 
 /**
+ * External mutexes/locks
+ */
+extern pthread_mutex_t free_open_file_entries_mutex;
+
+/**
  * Inode
  */
 typedef enum { T_FILE, T_DIRECTORY, T_SYM_LINK } inode_type;

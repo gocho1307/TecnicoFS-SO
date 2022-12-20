@@ -45,6 +45,7 @@ void write_fn() {
     assert(fd != NULL);
 
     char buffer[BUFFER_LEN];
+    memset(buffer, 0, BUFFER_LEN);
 
     int f = tfs_open(TFS_FILE, TFS_O_CREAT | TFS_O_TRUNC);
     assert(f != -1);
@@ -71,6 +72,8 @@ void *read_fn(void *input) {
 
     char buffer_external[BUFFER_LEN];
     char buffer_tfs[BUFFER_LEN];
+    memset(buffer_external, 0, BUFFER_LEN);
+    memset(buffer_tfs, 0, BUFFER_LEN);
 
     int f = tfs_open(TFS_FILE, 0);
     assert(f != -1);

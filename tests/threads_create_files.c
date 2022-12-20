@@ -46,6 +46,7 @@ int main() {
         assert(f != -1);
 
         char buffer[FILE_NAME_MAX_LEN];
+        memset(buffer, 0, FILE_NAME_MAX_LEN);
         assert(tfs_read(f, buffer, FILE_NAME_MAX_LEN) != -1);
 
         assert(strcmp(path, buffer) == 0);

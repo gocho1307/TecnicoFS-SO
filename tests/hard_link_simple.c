@@ -1,4 +1,4 @@
-#include "fs/operations.h"
+#include "../fs/operations.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -47,7 +47,7 @@ void write_contents(char const *path) {
 int main() {
     assert(tfs_init(NULL) != -1);
 
-    // Write to symlink and read original file
+    // Write to hard link and read original file
     {
         int f = tfs_open(target_path1, TFS_O_CREAT);
         assert(f != -1);
@@ -56,13 +56,13 @@ int main() {
         assert_empty_file(target_path1); // sanity check
     }
 
-    assert(tfs_sym_link(target_path1, link_path1) != -1);
+    assert(tfs_link(target_path1, link_path1) != -1);
     assert_empty_file(link_path1);
 
     write_contents(link_path1);
     assert_contents_ok(target_path1);
 
-    // Write to original file and read through symlink
+    // Write to original file and read through hard link
     {
         int f = tfs_open(target_path2, TFS_O_CREAT);
         assert(f != -1);
@@ -73,7 +73,7 @@ int main() {
         assert_contents_ok(target_path2); // sanity check
     }
 
-    assert(tfs_sym_link(target_path2, link_path2) != -1);
+    assert(tfs_link(target_path2, link_path2) != -1);
     assert_contents_ok(link_path2);
 
     assert(tfs_destroy() != -1);

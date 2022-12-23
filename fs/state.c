@@ -1,6 +1,6 @@
 #include "state.h"
-#include "betterassert.h"
-#include "utils.h"
+#include "../utils/betterassert.h"
+#include "../utils/betterlocks.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>

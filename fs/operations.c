@@ -1,8 +1,8 @@
 #include "operations.h"
-#include "betterassert.h"
+#include "../utils/betterassert.h"
+#include "../utils/betterlocks.h"
 #include "config.h"
 #include "state.h"
-#include "utils.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -202,7 +202,7 @@ int tfs_sym_link(char const *target, char const *link) {
     // Writes the target path into the symbolic link data block
     char *block = data_block_get(link_inode->i_data_block);
     ALWAYS_ASSERT(block != NULL, "tfs_sym_link: data block deleted mid-write");
-    memcpy(block, target, strlen(target));
+    memcpy(block, target, strlen(target) + 1);
 
     // Adds a directory entry for the symbolic link
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
@@ -322,9 +322,10 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
     }
 
     // Buffers the file data
-    char buffer[1];
+    size_t block_size = state_block_size();
+    char buffer[block_size];
     size_t read;
-    while ((read = fread(buffer, sizeof(char), 1, source_file)) > 0) {
+    while ((read = fread(buffer, sizeof(char), block_size, source_file)) > 0) {
         // Writes the data into the file in TecnicoFS
         if (tfs_write(dest_file, buffer, read) != read) {
             fclose(source_file);

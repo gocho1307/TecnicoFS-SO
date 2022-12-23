@@ -1,11 +1,13 @@
-#include "fs/operations.h"
+#include "../fs/operations.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
 int main() {
 
-    char *str_ext_file1 = "s5vSTm4EeXMGMh^C#Pj3wa6eZ#K%GSAik%Phx^J$@f&wdffxCNRK^psv7UCBf3YmY^PC&DCHgo6AdMeK*kaSCZV#BX9QiybRJxgu";
+    char *str_ext_file1 =
+        "s5vSTm4EeXMGMh^C#Pj3wa6eZ#K%GSAik%Phx^J$@f&wdffxCNRK^psv7UCBf3YmY^PC&"
+        "DCHgo6AdMeK*kaSCZV#BX9QiybRJxgu";
     char *str_ext_file2 = "AAA";
     char *path_copied_file = "/f1";
     char *path_src1 = "tests/file_to_copy_many_different_characters.txt";

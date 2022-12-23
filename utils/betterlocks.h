@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef __UTILS_BETTER_LOCKS_H__
+#define __UTILS_BETTER_LOCKS_H__
 
 #include <pthread.h>
 
@@ -14,4 +14,4 @@ void mutex_destroy(pthread_mutex_t *mutex);
 void mutex_lock(pthread_mutex_t *mutex);
 void mutex_unlock(pthread_mutex_t *mutex);
 
-#endif // UTILS_H
+#endif // __UTILS_BETTER_LOCKS_H__

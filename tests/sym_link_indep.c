@@ -1,4 +1,4 @@
-#include "fs/operations.h"
+#include "../fs/operations.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,7 +24,7 @@ int _open(size_t rep, size_t file_idx, tfs_file_mode_t mode) {
 }
 
 int _symbolic_link(size_t rep_target, size_t file_idx_target, size_t rep_name,
-          size_t file_idx_name) {
+                   size_t file_idx_name) {
     char target[MAX_PATH_SIZE];
     _format_path(target, MAX_PATH_SIZE, rep_target, file_idx_target);
 
@@ -35,7 +35,7 @@ int _symbolic_link(size_t rep_target, size_t file_idx_target, size_t rep_name,
 }
 
 int _hard_link(size_t rep_target, size_t file_idx_target, size_t rep_name,
-          size_t file_idx_name) {
+               size_t file_idx_name) {
     char target[MAX_PATH_SIZE];
     _format_path(target, MAX_PATH_SIZE, rep_target, file_idx_target);
 

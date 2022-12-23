@@ -1,4 +1,4 @@
-#include "fs/operations.h"
+#include "../fs/operations.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -14,8 +14,10 @@
 #define REPEAT_COUNT 8
 #define FILL_COUNT (BUFFER_LEN * REPEAT_COUNT)
 
-char *input_files[] = {"./tests/input1.txt", "./tests/input1.txt", "./tests/input2.txt", "./tests/input2.txt",
-                       "./tests/input3.txt", "./tests/input3.txt", "./tests/input4.txt", "./tests/input4.txt"};
+char *input_files[] = {"./tests/input1.txt", "./tests/input1.txt",
+                       "./tests/input2.txt", "./tests/input2.txt",
+                       "./tests/input3.txt", "./tests/input3.txt",
+                       "./tests/input4.txt", "./tests/input4.txt"};
 int mode[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1}; // 0 = append, 1 = truncate
 char *tfs_files[] = {"/f1", "/f2", "/f3", "/f4", "/f5", "/f6", "/f7", "/f8"};
 

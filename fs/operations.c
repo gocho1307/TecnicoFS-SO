@@ -10,7 +10,6 @@
 #include <string.h>
 
 static pthread_mutex_t open_mutex;
-static pthread_rwlock_t link_lock;
 
 static inline bool valid_pathname(char const *name) {
     return name != NULL && strlen(name) > 1 && name[0] == '/';
@@ -35,7 +34,6 @@ int tfs_init(tfs_params const *params_ptr) {
     }
 
     mutex_init(&open_mutex);
-    rwlock_init(&link_lock);
 
     if (state_init(params) != 0) {
         return -1;
@@ -52,7 +50,6 @@ int tfs_init(tfs_params const *params_ptr) {
 
 int tfs_destroy() {
     mutex_destroy(&open_mutex);
-    rwlock_destroy(&link_lock);
 
     return state_destroy();
 }
@@ -119,11 +116,9 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         }
 
         // Truncate (if requested)
-        if (mode & TFS_O_TRUNC) {
-            if (inode->i_size > 0) {
-                data_block_free(inode->i_data_block);
-                inode->i_size = 0;
-            }
+        if (mode & TFS_O_TRUNC && inode->i_size > 0) {
+            data_block_free(inode->i_data_block);
+            inode->i_size = 0;
         }
         // Determine initial offset
         if (mode & TFS_O_APPEND) {
@@ -141,8 +136,8 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
 
         // Add entry in the root directory
         if (add_dir_entry(root_dir_inode, name + 1, inum) == -1) {
-            mutex_unlock(&open_mutex);
             inode_delete(inum);
+            mutex_unlock(&open_mutex);
             return -1; // no space in directory
         }
         mutex_unlock(&open_mutex);
@@ -178,23 +173,19 @@ int tfs_sym_link(char const *target, char const *link) {
         return -1;
     }
 
-    rwlock_rdlock(&link_lock);
     // Creates the symbolic link inode and alocates memory for the target path
     int link_inum = inode_create(T_SYM_LINK);
     if (link_inum == -1) {
-        rwlock_unlock(&link_lock);
         return -1;
     }
     inode_t *link_inode = inode_get(link_inum);
     if (link_inode == NULL) {
         inode_delete(link_inum);
-        rwlock_unlock(&link_lock);
         return -1;
     }
     int bnum = data_block_alloc();
     if (bnum == -1) {
         inode_delete(link_inum);
-        rwlock_unlock(&link_lock);
         return -1;
     }
     link_inode->i_data_block = bnum;
@@ -210,10 +201,8 @@ int tfs_sym_link(char const *target, char const *link) {
                   "tfs_sym_link: root dir inode must exist");
     if (add_dir_entry(root_dir_inode, link + 1, link_inum) == -1) {
         inode_delete(link_inum);
-        rwlock_unlock(&link_lock);
         return -1;
     }
-    rwlock_unlock(&link_lock);
 
     return 0;
 }
@@ -224,33 +213,28 @@ int tfs_link(char const *target, char const *link) {
         return -1;
     }
 
-    rwlock_rdlock(&link_lock);
     // Adds a directory entry of the hard link
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_link: root dir inode must exist");
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
-        rwlock_unlock(&link_lock);
         return -1;
     }
 
-    if (add_dir_entry(root_dir_inode, link + 1, target_inum) == -1) {
-        rwlock_unlock(&link_lock);
-        return -1;
-    }
     // Makes sure to not create hard links to symbolic links and increments the
     // number of hard links on the target inode
     inode_t *target_inode = inode_get(target_inum);
+    rwlock_wrlock(&inode_locks[target_inum]);
     if (target_inode == NULL || target_inode->i_node_type == T_SYM_LINK) {
-        clear_dir_entry(root_dir_inode, link + 1);
-        rwlock_unlock(&link_lock);
+        rwlock_unlock(&inode_locks[target_inum]);
         return -1;
     }
-    rwlock_wrlock(&inode_locks[target_inum]);
     target_inode->i_hard_links++;
     rwlock_unlock(&inode_locks[target_inum]);
-    rwlock_unlock(&link_lock);
+    if (add_dir_entry(root_dir_inode, link + 1, target_inum) == -1) {
+        return -1;
+    }
 
     return 0;
 }
@@ -261,43 +245,38 @@ int tfs_unlink(char const *target) {
         return -1;
     }
 
-    rwlock_wrlock(&link_lock);
     // Gets the target file inode
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_unlink: root dir inode must exist");
     int target_inum = tfs_lookup(target, root_dir_inode);
     if (target_inum == -1) {
-        rwlock_unlock(&link_lock);
-        return -1;
-    }
-    inode_t *target_inode = inode_get(target_inum);
-    // The tecnico fs can only unlink files and symbolic links
-    if (target_inode == NULL) {
-        rwlock_unlock(&link_lock);
-        return -1;
-    }
-    ALWAYS_ASSERT(target_inode->i_node_type != T_DIRECTORY,
-                  "tfs_unlink: directories cannot be unlinked");
-
-    if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
-        rwlock_unlock(&link_lock);
         return -1;
     }
     mutex_lock(&free_open_file_entries_mutex);
+    if (clear_dir_entry(root_dir_inode, target + 1) == -1) {
+        return -1;
+    }
+    rwlock_wrlock(&inode_locks[target_inum]);
+    inode_t *target_inode = inode_get(target_inum);
+    if (target_inode == NULL) {
+        rwlock_unlock(&inode_locks[target_inum]);
+        mutex_unlock(&free_open_file_entries_mutex);
+        return -1;
+    }
+    // The tecnico fs can only unlink files and symbolic links
+    ALWAYS_ASSERT(target_inode->i_node_type != T_DIRECTORY,
+                  "tfs_unlink: directories cannot be unlinked");
+
     // Decreases the hard link counter and when it reaches 0 the file is
     // deleted if it's not open (needs to lock inode because it changed the hard
     // link counter)
-    rwlock_wrlock(&inode_locks[target_inum]);
     target_inode->i_hard_links--;
     if (target_inode->i_hard_links == 0 && is_file_open(target_inum) == 0) {
-        rwlock_unlock(&inode_locks[target_inum]);
         inode_delete(target_inum);
-    } else {
-        rwlock_unlock(&inode_locks[target_inum]);
     }
+    rwlock_unlock(&inode_locks[target_inum]);
     mutex_unlock(&free_open_file_entries_mutex);
-    rwlock_unlock(&link_lock);
 
     return 0;
 }

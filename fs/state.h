@@ -26,7 +26,7 @@ typedef struct {
     int i_data_block;
     size_t i_hard_links;
 
-    // in a more complete FS, more fields could exist here
+    // in a more complete FS, more fields should exist here
 } inode_t;
 
 /**
@@ -45,12 +45,10 @@ typedef enum { FREE = 0, TAKEN = 1 } allocation_state_t;
 typedef struct {
     int of_inumber;
     size_t of_offset;
-    pthread_mutex_t mutex;
 } open_file_entry_t;
 
 int state_init(tfs_params);
 int state_destroy(void);
-
 size_t state_block_size(void);
 
 int inode_create(inode_type n_type);

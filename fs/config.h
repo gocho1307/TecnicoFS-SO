@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
 
 // FS root inode number
 #define ROOT_DIR_INUM (0)
@@ -8,4 +8,4 @@
 
 #define DELAY (5000)
 
-#endif // CONFIG_H
+#endif // __CONFIG_H__

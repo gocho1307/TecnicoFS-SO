@@ -1,5 +1,5 @@
-#ifndef STATE_H
-#define STATE_H
+#ifndef __STATE_H__
+#define __STATE_H__
 
 #include "config.h"
 #include "operations.h"
@@ -70,4 +70,4 @@ ssize_t read_from_open_file(int fhandle, void *buffer, size_t len);
 open_file_entry_t *get_open_file_entry(int fhandle);
 bool is_file_open(int inumber);
 
-#endif // STATE_H
+#endif // __STATE_H__

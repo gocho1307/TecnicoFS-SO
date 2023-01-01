@@ -568,6 +568,10 @@ int add_to_open_file_table(int inumber, size_t offset) {
     }
 
     mutex_lock(&free_open_file_entries_mutex);
+    if (freeinode_ts[inumber] != TAKEN) {
+        mutex_unlock(&free_open_file_entries_mutex);
+        return -1;
+    }
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (free_open_file_entries[i] == FREE) {
             free_open_file_entries[i] = TAKEN;

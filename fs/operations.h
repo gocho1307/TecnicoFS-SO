@@ -1,5 +1,5 @@
-#ifndef OPERATIONS_H
-#define OPERATIONS_H
+#ifndef __OPERATIONS_H__
+#define __OPERATIONS_H__
 
 #include "config.h"
 #include <sys/types.h>
@@ -136,4 +136,4 @@ int tfs_unlink(char const *target);
  */
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path);
 
-#endif // OPERATIONS_H
+#endif // __OPERATIONS_H__

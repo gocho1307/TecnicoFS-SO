@@ -44,7 +44,7 @@ O servidor incorpora o TecnicoFS e é um processo autónomo, inicializado da seg
 $ mbroker <pipename> <max_sessions>
 ```
 
-O servidor cria um _named pipe_ cujo nome (_pipename_) é o indicado no argumento acima.
+O servidor cria um _named pipe_ cujo nome `pipename` é o indicado no argumento acima.
 É através deste _named pipe_, criado pelo servidor, que os processos cliente se poderão ligar para se registarem.
 
 Qualquer processo cliente pode ligar-se ao _named pipe_ do servidor e enviar-lhe uma mensagem a solicitar o início de uma sessão.
@@ -87,10 +87,10 @@ Um publicador é um processo lançado da seguinte forma:
 pub <register_pipe> <pipe_name> <box_name>
 ```
 
-Assim que é lançado, o _publisher_, pede para iniciar uma sessão no servidor de _mbroker_, indicando a caixa de mensagens para a qual pretende escrever mensagens.
-Se a ligação for aceite (pode ser rejeitada caso já haja um _publisher_ ligado à caixa, por exemplo) fica a receber mensagens do `stdin` e depois publica-as.
-Uma **mensagem** corresponde a uma linha do `stdin`, sendo truncada a um dado valor máximo e delimitada por um `\0`, como uma _string_ de C.
-A mensagem não deve incluir um `\n` final.
+Assim que é lançado, o _publisher_:
+
+1. Pede para iniciar uma sessão no servidor de _mbroker_, indicando a caixa de mensagens para a qual pretende escrever mensagens;
+2. Se a ligação for aceite (pode ser rejeitada caso já haja um _publisher_ ligado à caixa, por exemplo) fica a receber mensagens do `stdin` e depois publica-as. Uma **mensagem** corresponde a uma linha do `stdin`, sendo truncada a um dado valor máximo e delimitada por um `\0`, como uma _string_ de C. A mensagem não deve incluir um `\n` final.
 
 Se o _publisher_ receber um EOF (_End Of File_, por exemplo, com um Ctrl-D), deve encerrar a sessão fechando o _named pipe_.
 
@@ -263,14 +263,6 @@ Esta funcionalidade deverá ser implementada usando **variáveis de condição**
 
 Para uniformizar o _output_ dos diversos comandos (para o `stdout`), é fornecido o formato com que estas devem ser impressas.
 
-### 3.4 Fila Produtor-Consumidor
-
-A fila produtor-consumidor é a estrutura de sincronização mais complexa do projeto.
-Por isso, esta componente vai ser avaliada em isolamento (i.e., existirão testes que usam apenas a interface descrita no `producer-consumer.h`) para garantir a sua correção.
-Como tal, a interface do `producer-consumer.h` não deve ser alterada.
-
-De resto, os grupos são livres de alterar o código base como lhes for conveniente.
-
 #### Mensagens do subscritor
 
 ```c
@@ -286,6 +278,14 @@ fprintf(stdout, "%s %zu %zu %zu\n", box_name, box_size, n_publishers, n_subscrib
 ```
 
 As caixas devem estar ordenadas por ordem alfabética, não sendo garantido que o servidor as envie por essa ordem (i.e., o cliente deve ordenar as caixas antes das imprimir).
+
+### 3.4 Fila Produtor-Consumidor
+
+A fila produtor-consumidor é a estrutura de sincronização mais complexa do projeto.
+Por isso, esta componente vai ser avaliada em isolamento (i.e., existirão testes que usam apenas a interface descrita no `producer-consumer.h`) para garantir a sua correção.
+Como tal, a interface do `producer-consumer.h` não deve ser alterada.
+
+De resto, os grupos são livres de alterar o código base como lhes for conveniente.
 
 ### 3.5 Espera Ativa
 

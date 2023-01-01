@@ -1,9 +1,15 @@
-#include "logging.h"
+#include "../server/server.h"
+#include "../utils/logging.h"
+
+static void print_usage() {
+    fprintf(stderr, "usage: mbroker <pipename> <max_sessions>\n");
+}
 
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
-    fprintf(stderr, "usage: mbroker <pipename>\n");
-    WARN("unimplemented"); // TODO: implement
-    return -1;
+    if (argc != 3) {
+        print_usage();
+        return EXIT_FAILURE;
+    }
+
+    return 0;
 }

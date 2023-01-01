@@ -5,7 +5,6 @@
 
 CC ?= gcc
 LD ?= gcc
-CLANG_FORMAT ?= clang-format
 
 # space separated list of directories with header files
 INCLUDE_DIRS := fs protocol utils producer-consumer .
@@ -77,7 +76,7 @@ LDFLAGS += -fsanitize=thread
 # Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
-$(TEST_TARGETS): fs/operations.o fs/state.o utils/betterlocks.o
+$(TEST_TARGETS): fs/operations.o fs/state.o utils/logging.o utils/betterlocks.o
 mbroker/mbroker: $(FS_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
 manager/manager: $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 publisher/pub: $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
@@ -103,24 +102,7 @@ test: $(TEST_TARGETS)
 # enclosing rule. See https://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 
 fmt: $(SOURCES) $(HEADERS)
-	echo; \
-	echo; \
-	if ! command -v $(CLANG_FORMAT) 2>/dev/null >/dev/null; then \
-		echo "clang-format not installed. cannot format"; \
-		exit 1; \
-	fi; \
-	if [ $$($(CLANG_FORMAT) --version | grep --only-matching -E 'version [0-9]+' | cut -d' ' -f2) -lt 12 ]; then \
-		echo "clang-format is too old (version 12+ required). cannot format"; \
-		echo "if using Ubuntu, install clang-format-12 (apt install clang-format-12) and set CLANG_FORMAT to clang-format-12"; \
-		echo; \
-		echo "e.g.:"; \
-		echo '$$ export CLANG_FORMAT=clang-format-12'; \
-		echo '$$ make fmt'; \
-		echo; \
-		echo 'You can also add "export CLANG_FORMAT=clang-format-12" to ~/.profile and never have to do it again.'; \
-		exit 1; \
-	fi; \
-	$(CLANG_FORMAT) -i $^
+	clang-format -i $^
 
 clean:
 	rm -f $(OBJECTS) $(TARGET_EXECS) $(TEST_TARGETS)

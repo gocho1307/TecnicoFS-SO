@@ -1,13 +1,16 @@
+#include "logging.h"
+#include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * Initializes a rwlock. When unsuccessful, it exits with failure.
  */
 void rwlock_init(pthread_rwlock_t *lock) {
     if (pthread_rwlock_init(lock, NULL) != 0) {
-        perror("Failed to initalize the rwlock");
+        WARN("Failed to initialize rwlock: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -17,7 +20,7 @@ void rwlock_init(pthread_rwlock_t *lock) {
  */
 void rwlock_destroy(pthread_rwlock_t *lock) {
     if (pthread_rwlock_destroy(lock) != 0) {
-        perror("Failed to destroy the rwlock");
+        WARN("Failed to destroy rwlock: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -27,7 +30,7 @@ void rwlock_destroy(pthread_rwlock_t *lock) {
  */
 void rwlock_rdlock(pthread_rwlock_t *lock) {
     if (pthread_rwlock_rdlock(lock) != 0) {
-        perror("Failed to lock the rwlock to read-only");
+        WARN("Failed to lock rwlock to read-only: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -37,7 +40,7 @@ void rwlock_rdlock(pthread_rwlock_t *lock) {
  */
 void rwlock_wrlock(pthread_rwlock_t *lock) {
     if (pthread_rwlock_wrlock(lock) != 0) {
-        perror("Failed to lock the rwlock to write-read");
+        WARN("Failed to lock rwlock to write-read: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -47,7 +50,7 @@ void rwlock_wrlock(pthread_rwlock_t *lock) {
  */
 void rwlock_unlock(pthread_rwlock_t *lock) {
     if (pthread_rwlock_unlock(lock) != 0) {
-        perror("Failed to unlock the rwlock");
+        WARN("Failed to unlock rwlock: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -57,7 +60,7 @@ void rwlock_unlock(pthread_rwlock_t *lock) {
  */
 void mutex_init(pthread_mutex_t *mutex) {
     if (pthread_mutex_init(mutex, NULL) != 0) {
-        perror("Failed to Initialize the mutex");
+        WARN("Failed to initialize mutex: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -67,7 +70,7 @@ void mutex_init(pthread_mutex_t *mutex) {
  */
 void mutex_destroy(pthread_mutex_t *mutex) {
     if (pthread_mutex_destroy(mutex) != 0) {
-        perror("Failed to destroy the mutex");
+        WARN("Failed to destroy mutex: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -77,7 +80,7 @@ void mutex_destroy(pthread_mutex_t *mutex) {
  */
 void mutex_lock(pthread_mutex_t *mutex) {
     if (pthread_mutex_lock(mutex) != 0) {
-        perror("Failed to lock the mutex");
+        WARN("Failed to lock mutex: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -87,7 +90,7 @@ void mutex_lock(pthread_mutex_t *mutex) {
  */
 void mutex_unlock(pthread_mutex_t *mutex) {
     if (pthread_mutex_unlock(mutex) != 0) {
-        perror("Failed to unlock the mutex");
+        WARN("Failed to unlock mutex: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }

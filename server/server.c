@@ -51,7 +51,7 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
 }
 
 int client_get_named_pipe(char *path, size_t len, char *client_type,
-                             size_t pid) {
+                          size_t pid) {
     int ret = snprintf(path, len, CLIENT_NAMED_PIPE_FORMAT, client_type, pid);
     if (ret <= 0 || ret > len) {
         WARN("Failed to obtain session pipename");
@@ -60,7 +60,12 @@ int client_get_named_pipe(char *path, size_t len, char *client_type,
     return 0;
 }
 
-int client_init(char *session_pipename) {
+int client_init(char *session_pipename, char *client_type) {
+    pid_t client_pid = getpid();
+    if (client_get_named_pipe(session_pipename, CLIENT_NAMED_PIPE_MAX_LEN,
+                              client_type, client_pid) != 0) {
+        return -1;
+    }
     if (unlink(session_pipename) != 0 && errno != ENOENT) {
         WARN("Failed to delete session pipe");
         return -1;
@@ -73,12 +78,15 @@ int client_init(char *session_pipename) {
 }
 
 int client_request_connection(char *register_pipename, int code,
-                              char *session_pipename, char *box_name) {
-    size_t packet_len =
-        sizeof(uint8_t) + sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN;
-    if (box_name != NULL) {
-        packet_len += sizeof(char) * BOX_NAME_MAX_LEN;
-    }
+                              char *client_pipename, char *name) {
+    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    strncpy(session_pipename, client_pipename, CLIENT_NAMED_PIPE_MAX_LEN);
+    char box_name[BOX_NAME_MAX_LEN] = {0};
+    strncpy(box_name, name, BOX_NAME_MAX_LEN);
+
+    size_t packet_len = sizeof(uint8_t) +
+                        sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN +
+                        sizeof(char) * BOX_NAME_MAX_LEN;
     int8_t *packet = packet_create(packet_len);
     if (packet == NULL) {
         return -1;
@@ -90,10 +98,8 @@ int client_request_connection(char *register_pipename, int code,
     packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
     packet_write(packet, &packet_offset, session_pipename,
                  sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN);
-    if (box_name != NULL) {
-        packet_write(packet, &packet_offset, box_name,
-                     sizeof(char) * BOX_NAME_MAX_LEN);
-    }
+    packet_write(packet, &packet_offset, box_name,
+                 sizeof(char) * BOX_NAME_MAX_LEN);
 
     int register_pipe_in = open(register_pipename, O_WRONLY);
     if (register_pipe_in < 0) {

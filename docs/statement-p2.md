@@ -221,7 +221,7 @@ A resposta à listagem de caixas vem em várias mensagens, do seguinte tipo:
 ```
 
 O byte `last` é `1` se esta for a última caixa da listagem e a `0` em caso contrário.
-`box_size` é o tamanho (em _bytes_) da caixa, com `n_publisher` (`0` ou `1`) indicando se existe um _publisher_ ligado à caixa naquele momento, e `n_subscriber` o número de subscritores da caixa naquele momento.
+`box_size` é o tamanho (em _bytes_) da caixa, com `n_publishers` (`0` ou `1`) indicando se existe um _publisher_ ligado à caixa naquele momento, e `n_subscribers` o número de subscritores da caixa naquele momento.
 
 ### 2.2 _Publisher_
 

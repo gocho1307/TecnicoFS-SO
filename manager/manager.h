@@ -1,24 +1,18 @@
 #ifndef __MANAGER_H__
 #define __MANAGER_H__
 
-/**
- *
- */
-int handle_box_create(char *register_pipe_name, char *box_name);
+#include <stdint.h>
 
 /**
  *
  */
-int handle_box_remove(char *register_pipe_name, char *box_name);
+int manager_handle_box_management(char *register_pipe_name, uint8_t code,
+                                  char *session_pipename, char *box_name);
 
 /**
  *
  */
-int handle_box_management(char *box_name);
-
-/**
- *
- */
-int handle_box_listing(char *register_pipe_name);
+int manager_handle_box_listing(char *register_pipe_name,
+                               char *session_pipename);
 
 #endif // __MANAGER_H__

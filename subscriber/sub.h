@@ -4,11 +4,11 @@
 /**
  *
  */
-int read_messages();
+int subscriber_read_messages(char *session_pipename);
 
 /**
  *
  */
-void shutdown(int signum);
+void subscriber_shutdown(int signum);
 
 #endif // __SUBSCRIBER_H__

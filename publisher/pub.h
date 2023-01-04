@@ -4,6 +4,6 @@
 /**
  *
  */
-int write_messages();
+int publisher_write_messages(char *session_pipename);
 
 #endif // __PUBLISHER_H__

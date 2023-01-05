@@ -15,8 +15,10 @@ SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
 
+TEST_SOURCES := $(wildcard tests/*/*.c)
+TEST_TARGETS := $(patsubst %.c,%,$(wildcard tests/*/*.c))
+
 TARGET_EXECS := mbroker/mbroker manager/manager publisher/pub subscriber/sub
-TEST_TARGETS := $(patsubst %.c,%,$(wildcard tests/*.c))
 
 MBROKER_SOURCES  := $(wildcard mbroker/*.c)
 FS_SOURCES  := $(wildcard fs/*.c)
@@ -71,12 +73,12 @@ LDFLAGS += -fsanitize=thread
 
 # A phony target is one that is not really the name of a file
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: all clean depend fmt
+.PHONY: all test fmt clean depend
 
 # Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
-$(TEST_TARGETS): fs/operations.o fs/state.o utils/logging.o utils/betterlocks.o
+$(TEST_TARGETS): $(FS_OBJECTS) $(UTILS_OBJECTS)
 mbroker/mbroker: $(FS_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
 manager/manager: $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 publisher/pub: $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
@@ -101,7 +103,7 @@ test: $(TEST_TARGETS)
 # The $^ keyword is used in Makefile to refer to the right part of the ":" in the
 # enclosing rule. See https://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 
-fmt: $(SOURCES) $(HEADERS)
+fmt: $(SOURCES) $(HEADERS) $(TEST_SOURCES)
 	clang-format -i $^
 
 clean:
@@ -110,5 +112,5 @@ clean:
 # This generates a dependency file, with some default dependencies gathered from the include tree
 # The dependencies are gathered in the file autodep. You can find an example illustrating this GCC feature, without Makefile, at this URL: https://renenyffenegger.ch/notes/development/languages/C-C-plus-plus/GCC/options/MM
 # Run `make depend` whenever you add new includes in your files
-depend : $(SOURCES)
+depend : $(SOURCES) $(TEST_SOURCES)
 	$(CC) $(INCLUDES) -MM $^ > autodep

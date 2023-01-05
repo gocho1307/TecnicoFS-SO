@@ -1,3 +1,10 @@
+/*
+ *      File: operations.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: All the possible operations on the TecnicoFS.
+ */
+
 #include "operations.h"
 #include "../utils/betterassert.h"
 #include "../utils/betterlocks.h"

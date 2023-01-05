@@ -1,3 +1,10 @@
+/*
+ *      File: manager.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Program that manages the boxes in the server.
+ */
+
 #include "manager.h"
 #include "../server/server.h"
 #include "../utils/logging.h"

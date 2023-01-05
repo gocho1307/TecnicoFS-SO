@@ -1,3 +1,10 @@
+/*
+ *      File: mbroker.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Program that contains the actual server.
+ */
+
 #include "mbroker.h"
 #include "../fs/operations.h"
 #include "../producer-consumer/producer-consumer.h"

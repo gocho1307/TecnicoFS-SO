@@ -1,3 +1,10 @@
+/*
+ *      File: pub.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Program that publishes information into the server boxes.
+ */
+
 #include "pub.h"
 #include "../server/server.h"
 #include "../utils/logging.h"

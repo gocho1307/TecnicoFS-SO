@@ -1,3 +1,11 @@
+/*
+ *      File: server.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Contains the functions shared between all the server
+ *                   programs.
+ */
+
 #include "server.h"
 #include "../utils/logging.h"
 #include <errno.h>

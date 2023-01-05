@@ -1,3 +1,10 @@
+/*
+ *      File: sub.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Program that reads information from the server boxes.
+ */
+
 #include "sub.h"
 #include "../server/server.h"
 #include "../utils/logging.h"

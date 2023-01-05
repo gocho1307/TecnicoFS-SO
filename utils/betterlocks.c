@@ -1,3 +1,11 @@
+/*
+ *      File: betterlocks.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Wrappers for some pthread.h functions that WARN when
+ *                   something goes wrong.
+ */
+
 #include "logging.h"
 #include <errno.h>
 #include <pthread.h>

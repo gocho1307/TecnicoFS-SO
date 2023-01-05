@@ -287,38 +287,40 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
 
-    // Opens the file from the external fs
-    FILE *source_file = fopen(source_path, "r");
-    if (source_file == NULL) {
-        return -1;
-    }
-
     // Opens the destination file in the FS
     int dest_file = tfs_open(dest_path, TFS_O_CREAT | TFS_O_TRUNC);
     if (dest_file == -1) {
-        fclose(source_file); // since we return -1, we can ignore the result
+        return -1;
+    }
+
+    // Opens the file from the external fs
+    FILE *source_file = fopen(source_path, "r");
+    if (source_file == NULL) {
+        tfs_close(dest_file); // since we return -1, we can ignore the result
         return -1;
     }
 
     // Buffers the file data
-    size_t block_size = state_block_size();
-    char buffer[block_size];
+    char buffer[1];
     size_t read;
-    while ((read = fread(buffer, sizeof(char), block_size, source_file)) > 0) {
+    while ((read = fread(buffer, sizeof(char), 1, source_file)) > 0) {
         // Writes the data into the file in TecnicoFS
         if (tfs_write(dest_file, buffer, read) != read) {
-            fclose(source_file);
             tfs_close(dest_file);
+            fclose(source_file);
             return -1;
         }
     }
 
-    // Closes the files
-    if (fclose(source_file) != 0) {
-        tfs_close(dest_file); // since we return -1, we can ignore the result
+    // Closes the files and checks for errors possibly causes by fread
+    if (tfs_close(dest_file) == -1) {
+        fclose(source_file); // since we return -1, we can ignore the result
         return -1;
     }
-    if (tfs_close(dest_file) == -1) {
+    if (ferror(source_file)) {
+        return -1;
+    }
+    if (fclose(source_file) != 0) {
         return -1;
     }
 

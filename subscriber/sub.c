@@ -4,12 +4,13 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
 volatile sig_atomic_t shutdown_signaler = 0;
 
 static void print_usage() {
-    fprintf(stderr, "usage: sub <register_pipe_name> <box_name>\n");
+    fprintf(stderr, "Usage: sub <register_pipe_name> <pipe_name> <box_name>\n");
 }
 
 int main(int argc, char **argv) {
@@ -19,18 +20,18 @@ int main(int argc, char **argv) {
     }
 
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
 
     signal(SIGINT, subscriber_shutdown);
 
-    // Gets a unique session pipename for the subscriber based on its pid and
-    // initializes the session pipe
-    if (client_init(session_pipename, "subscriber") != 0) {
+    // Starts the session pipename for the subscriber
+    if (client_init(session_pipename) != 0) {
         return EXIT_FAILURE;
     }
 
     // Requests the mbroker for a connection
     if (client_request_connection(argv[1], SERVER_CODE_SUB_REGISTER,
-                                  session_pipename, argv[2]) != 0) {
+                                  session_pipename, argv[3]) != 0) {
         unlink(session_pipename);
         return EXIT_FAILURE;
     }

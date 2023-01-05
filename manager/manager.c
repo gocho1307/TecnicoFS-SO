@@ -7,42 +7,43 @@
 #include <unistd.h>
 
 static void print_usage() {
-    fprintf(stderr, "usage: \n"
-                    "   manager <register_pipe_name> create <box_name>\n"
-                    "   manager <register_pipe_name> remove <box_name>\n"
-                    "   manager <register_pipe_name> list\n");
+    fprintf(stderr,
+            "Usage: \n"
+            "   manager <register_pipe_name> <pipe_name> create <box_name>\n"
+            "   manager <register_pipe_name> <pipe_name> remove <box_name>\n"
+            "   manager <register_pipe_name> <pipe_name> list\n");
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3 || argc > 4) {
+    if (argc < 4 || argc > 5) {
         print_usage();
         return EXIT_FAILURE;
     }
-    if (strcmp(argv[2], "create") && strcmp(argv[2], "remove") &&
-        strcmp(argv[2], "list")) {
+    if (strcmp(argv[3], "create") && strcmp(argv[3], "remove") &&
+        strcmp(argv[3], "list")) {
         print_usage();
         return EXIT_FAILURE;
     }
 
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
 
-    // Gets a unique session pipename for the subscriber based on its pid and
-    // initializes the session pipe
-    if (client_init(session_pipename, "manager") != 0) {
+    // Starts the session pipename for the manager
+    if (client_init(session_pipename) != 0) {
         return EXIT_FAILURE;
     }
 
     // Handles the correct manager operation
-    char *operation = argv[2];
+    char *operation = argv[3];
     int result;
     switch (operation[0]) {
     case 'c':
         result = manager_handle_box_management(
-            argv[1], SERVER_CODE_CREATE_REQUEST, session_pipename, argv[2]);
+            argv[1], SERVER_CODE_CREATE_REQUEST, session_pipename, argv[4]);
         break;
     case 'r':
         result = manager_handle_box_management(
-            argv[1], SERVER_CODE_REMOVE_REQUEST, session_pipename, argv[2]);
+            argv[1], SERVER_CODE_REMOVE_REQUEST, session_pipename, argv[4]);
         break;
     case 'l':
         result = manager_handle_box_listing(argv[1], session_pipename);
@@ -89,10 +90,8 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
         close(session_pipe_in);
         return -1;
     }
-    if (return_code == 0 && code == SERVER_CODE_CREATE_ANSWER) {
-        printf("Successfully created box with name: %s\n", box_name);
-    } else if (return_code == 0 && code == SERVER_CODE_REMOVE_ANSWER) {
-        printf("Successfully removed box with name: %s\n", box_name);
+    if (return_code == 0) {
+        fprintf(stdout, "OK\n");
     } else {
         char error_message[MESSAGE_MAX_LEN];
         if (pipe_read(session_pipe_in, error_message,
@@ -100,7 +99,7 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
             close(session_pipe_in);
             return -1;
         }
-        printf("An error occurred: %s\n", error_message);
+        printf("ERROR %s\n", error_message);
     }
 
     close(session_pipe_in);

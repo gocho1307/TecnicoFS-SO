@@ -50,22 +50,7 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
     *packet_offset += data_len;
 }
 
-int client_get_named_pipe(char *path, size_t len, char *client_type,
-                          size_t pid) {
-    int ret = snprintf(path, len, CLIENT_NAMED_PIPE_FORMAT, client_type, pid);
-    if (ret <= 0 || ret > len) {
-        WARN("Failed to obtain session pipename");
-        return -1;
-    }
-    return 0;
-}
-
-int client_init(char *session_pipename, char *client_type) {
-    pid_t client_pid = getpid();
-    if (client_get_named_pipe(session_pipename, CLIENT_NAMED_PIPE_MAX_LEN,
-                              client_type, client_pid) != 0) {
-        return -1;
-    }
+int client_init(char *session_pipename) {
     if (unlink(session_pipename) != 0 && errno != ENOENT) {
         WARN("Failed to delete session pipe");
         return -1;
@@ -78,9 +63,7 @@ int client_init(char *session_pipename, char *client_type) {
 }
 
 int client_request_connection(char *register_pipename, int code,
-                              char *client_pipename, char *name) {
-    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
-    strncpy(session_pipename, client_pipename, CLIENT_NAMED_PIPE_MAX_LEN);
+                              char *session_pipename, char *name) {
     char box_name[BOX_NAME_MAX_LEN] = {0};
     strncpy(box_name, name, BOX_NAME_MAX_LEN);
 

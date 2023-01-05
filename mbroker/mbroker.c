@@ -13,7 +13,7 @@
 static pc_queue_t *requests_queue;
 
 static void print_usage() {
-    fprintf(stderr, "usage: mbroker <pipename> <max_sessions>\n");
+    fprintf(stderr, "Usage: mbroker <register_pipe_name> <max_sessions>\n");
 }
 
 int main(int argc, char **argv) {

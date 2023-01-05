@@ -50,24 +50,9 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
                   size_t data_len);
 
 /**
- * Creates a unique pipe path name for a given client based on their pid and
- * type.
- *
- * Input:
- *   - path: the client named pipe path the functions writes into
- *   - len: the length of the max path
- *   - client_type: the type of client (publisher, subscriber or manager)
- *   - pid: the pid of the client process
- *
- * Returns 0 if successful, -1 otherwise.
- */
-int client_get_named_pipe(char *path, size_t len, char *client_type,
-                          size_t pid);
-
-/**
  *
  */
-int client_init(char *session_pipename, char *client_type);
+int client_init(char *session_pipename);
 
 /**
  *

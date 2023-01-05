@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 static void print_usage() {
-    fprintf(stderr, "usage: pub <register_pipe_name> <box_name>\n");
+    fprintf(stderr, "Usage: pub <register_pipe_name> <pipe_name> <box_name>\n");
 }
 
 int main(int argc, char **argv) {
@@ -17,16 +17,16 @@ int main(int argc, char **argv) {
     }
 
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
 
-    // Gets a unique session pipename for the publisher based on its pid and
-    // initializes the session pipe
-    if (client_init(session_pipename, "publisher") != 0) {
+    // Starts the session pipename for the publisher
+    if (client_init(session_pipename) != 0) {
         return EXIT_FAILURE;
     }
 
     // Requests the mbroker for a connection
     if (client_request_connection(argv[1], SERVER_CODE_PUB_REGISTER,
-                                  session_pipename, argv[2]) != 0) {
+                                  session_pipename, argv[3]) != 0) {
         unlink(session_pipename);
         return EXIT_FAILURE;
     }

@@ -318,6 +318,7 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
         return -1;
     }
     if (ferror(source_file)) {
+        fclose(source_file); // since we return -1, we can ignore the result
         return -1;
     }
     if (fclose(source_file) != 0) {

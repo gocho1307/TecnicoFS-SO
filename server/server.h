@@ -21,7 +21,6 @@ enum {
 };
 
 #define CLIENT_NAMED_PIPE_MAX_LEN (256)
-#define CLIENT_NAMED_PIPE_FORMAT ("/tmp/%s_%ld.pipe")
 #define BOX_NAME_MAX_LEN (32)
 #define MESSAGE_MAX_LEN (1024)
 #define PIPE_BUFFER_MAX_LEN (PIPE_BUF)

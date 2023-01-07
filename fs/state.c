@@ -330,6 +330,8 @@ inode_t *inode_get(int inumber) {
     return &inode_table[inumber];
 }
 
+size_t inode_table_size(void) { return INODE_TABLE_SIZE; }
+
 /**
  * Store the inumber for a sub file in a directory.
  *

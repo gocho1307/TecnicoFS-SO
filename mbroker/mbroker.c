@@ -8,7 +8,7 @@
 #include "mbroker.h"
 #include "../fs/operations.h"
 #include "../producer-consumer/producer-consumer.h"
-#include "../server/server.h"
+#include "../common/common.h"
 #include "../utils/logging.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 
     char *register_pipename = argv[1];
 
-    if (mbroker_init(register_pipename, max_sessions) != 0) {
+    if (mbroker_init(register_pipename, (size_t)max_sessions) != 0) {
         return EXIT_FAILURE;
     }
 

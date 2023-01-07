@@ -6,7 +6,7 @@
  */
 
 #include "sub.h"
-#include "../server/server.h"
+#include "../common/common.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <signal.h>
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN + 1] = {0};
     strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
 
     signal(SIGINT, subscriber_shutdown);

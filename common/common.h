@@ -1,5 +1,5 @@
-#ifndef __SERVER_H__
-#define __SERVER_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #include <limits.h>
 #include <sys/types.h>
@@ -59,4 +59,4 @@ int client_init(char *session_pipename);
 int client_request_connection(char *register_pipename, int code,
                               char *session_pipename, char *box_name);
 
-#endif // __SERVER_H__
+#endif // __COMMON_H__

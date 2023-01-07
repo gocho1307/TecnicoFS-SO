@@ -6,7 +6,7 @@
  */
 
 #include "manager.h"
-#include "../server/server.h"
+#include "../common/common.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <stdint.h>
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN + 1] = {0};
     strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
 
     // Starts the session pipename for the manager

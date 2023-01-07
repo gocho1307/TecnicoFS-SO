@@ -1,12 +1,12 @@
 /*
- *      File: server.c
+ *      File: common.c
  *      Authors: Gonçalo Sampaio Bárias (ist1103124)
  *               Pedro Perez Vieira (ist1100064)
  *      Description: Contains the functions shared between all the server
  *                   programs.
  */
 
-#include "server.h"
+#include "common.h"
 #include "../utils/logging.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -72,7 +72,7 @@ int client_init(char *session_pipename) {
 
 int client_request_connection(char *register_pipename, int code,
                               char *session_pipename, char *name) {
-    char box_name[BOX_NAME_MAX_LEN] = {0};
+    char box_name[BOX_NAME_MAX_LEN + 1] = {0};
     strncpy(box_name, name, BOX_NAME_MAX_LEN);
 
     size_t packet_len = sizeof(uint8_t) +

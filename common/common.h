@@ -2,6 +2,7 @@
 #define __COMMON_H__
 
 #include <limits.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 /**
@@ -26,6 +27,16 @@ enum {
 #define PIPE_BUFFER_MAX_LEN (PIPE_BUF)
 
 /**
+ * Server communication box
+ */
+typedef struct {
+    char name[BOX_NAME_MAX_LEN];
+    uint64_t size;
+    uint64_t n_publishers;
+    uint64_t n_subscribers;
+} box;
+
+/**
  * Uses POSIX's read function, but handles EINTR and checks if everything was
  * correctly read from the pipe.
  */
@@ -47,11 +58,6 @@ int8_t *packet_create(size_t packet_len);
  */
 void packet_write(void *packet, size_t *packet_offset, const void *data,
                   size_t data_len);
-
-/**
- *
- */
-int client_init(char *session_pipename);
 
 /**
  *

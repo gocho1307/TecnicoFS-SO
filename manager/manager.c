@@ -7,10 +7,14 @@
 
 #include "manager.h"
 #include "../common/common.h"
+#include "../fs/state.h"
+#include "../utils/insertion-sort.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 static void print_usage() {
@@ -32,12 +36,14 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN + 1] = {0};
-    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
+    // Session pipe name is truncated to fit the request message
+    char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
 
-    // Starts the session pipename for the manager
-    if (client_init(session_pipename) != 0) {
-        return EXIT_FAILURE;
+    // Creates the session pipename for the manager
+    if (mkfifo(session_pipename, 0777) < 0) {
+        WARN("Failed to create session pipe");
+        return -1;
     }
 
     // Handles the correct manager operation
@@ -106,7 +112,7 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
             close(session_pipe_in);
             return -1;
         }
-        printf("ERROR %s\n", error_message);
+        fprintf(stdout, "ERROR %s\n", error_message);
     }
 
     close(session_pipe_in);
@@ -115,11 +121,51 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
 
 int manager_handle_box_listing(char *register_pipe_name,
                                char *session_pipename) {
-    char no_box_name[1] = "\0";
     if (client_request_connection(register_pipe_name, SERVER_CODE_LIST_REQUEST,
-                                  session_pipename, no_box_name) != 0) {
+                                  session_pipename, NULL) != 0) {
         return -1;
     }
 
+    int session_pipe_in = open(session_pipename, O_RDONLY);
+    if (session_pipe_in < 0) {
+        WARN("Failed to open pipe");
+        return -1;
+    }
+
+    size_t max_box_number = inode_table_size();
+    box boxes[max_box_number];
+    int size = -1;
+    uint8_t last = 0, code;
+    while (last == 0) {
+        if (pipe_read(session_pipe_in, &code, sizeof(uint8_t)) != 0 ||
+            code != SERVER_CODE_LIST_ANSWER) {
+            close(session_pipe_in);
+            return -1;
+        }
+
+        box new_box;
+        if (pipe_read(session_pipe_in, &last, sizeof(uint8_t)) ||
+            pipe_read(session_pipe_in, &new_box.name,
+                      sizeof(char) * BOX_NAME_MAX_LEN) ||
+            pipe_read(session_pipe_in, &new_box.size, sizeof(uint64_t)) ||
+            pipe_read(session_pipe_in, &new_box.n_publishers,
+                      sizeof(uint64_t)) ||
+            pipe_read(session_pipe_in, &new_box.n_subscribers,
+                      sizeof(uint64_t))) {
+            close(session_pipe_in);
+            return -1;
+        }
+        sorted_insert(boxes, size++, new_box);
+    }
+
+    for (int i = 0; i <= size; i++) {
+        fprintf(stdout, "%s %zu %zu %zu\n", boxes[i].name, boxes[i].size,
+                boxes[i].n_publishers, boxes[i].n_subscribers);
+    }
+    if (size == -1) {
+        fprintf(stdout, "NO BOXES FOUND\n");
+    }
+
+    close(session_pipe_in);
     return 0;
 }

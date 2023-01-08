@@ -12,8 +12,6 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 ssize_t pipe_read(int pipe_fd, void *buf, size_t buf_len) {
@@ -58,26 +56,19 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
     *packet_offset += data_len;
 }
 
-int client_init(char *session_pipename) {
-    if (unlink(session_pipename) != 0 && errno != ENOENT) {
-        WARN("Failed to delete session pipe");
-        return -1;
-    }
-    if (mkfifo(session_pipename, 0777) < 0) {
-        WARN("Failed to create session pipe");
-        return -1;
-    }
-    return 0;
-}
-
 int client_request_connection(char *register_pipename, int code,
                               char *session_pipename, char *name) {
-    char box_name[BOX_NAME_MAX_LEN + 1] = {0};
-    strncpy(box_name, name, BOX_NAME_MAX_LEN);
+    char box_name[BOX_NAME_MAX_LEN] = {0};
+    if (name != NULL) {
+        // Box name is truncated to fit the request message
+        strncpy(box_name, name, BOX_NAME_MAX_LEN - 1);
+    }
 
-    size_t packet_len = sizeof(uint8_t) +
-                        sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN +
-                        sizeof(char) * BOX_NAME_MAX_LEN;
+    size_t packet_len =
+        sizeof(uint8_t) + sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN;
+    if (name != NULL) {
+        packet_len += sizeof(char) * BOX_NAME_MAX_LEN;
+    }
     int8_t *packet = packet_create(packet_len);
     if (packet == NULL) {
         return -1;
@@ -89,8 +80,10 @@ int client_request_connection(char *register_pipename, int code,
     packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
     packet_write(packet, &packet_offset, session_pipename,
                  sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN);
-    packet_write(packet, &packet_offset, box_name,
-                 sizeof(char) * BOX_NAME_MAX_LEN);
+    if (name != NULL) {
+        packet_write(packet, &packet_offset, box_name,
+                     sizeof(char) * BOX_NAME_MAX_LEN);
+    }
 
     int register_pipe_in = open(register_pipename, O_WRONLY);
     if (register_pipe_in < 0) {

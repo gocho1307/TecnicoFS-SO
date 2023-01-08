@@ -77,7 +77,7 @@ LDFLAGS += -fsanitize=thread
 # Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
-$(TEST_TARGETS): fs/operations.o fs/state.o utils/betterlocks.o
+$(TEST_TARGETS): fs/operations.o fs/state.o utils/better-locks.o
 mbroker/mbroker: $(FS_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
 manager/manager: $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 publisher/pub: $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)

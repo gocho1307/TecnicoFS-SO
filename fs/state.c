@@ -1,6 +1,13 @@
+/*
+ *      File: state.c
+ *      Authors: Gonçalo Sampaio Bárias (ist1103124)
+ *               Pedro Perez Vieira (ist1100064)
+ *      Description: Persistent FS state.
+ */
+
 #include "state.h"
-#include "../utils/betterassert.h"
-#include "../utils/betterlocks.h"
+#include "../utils/better-assert.h"
+#include "../utils/better-locks.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>

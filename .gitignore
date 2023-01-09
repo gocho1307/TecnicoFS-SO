@@ -3,6 +3,10 @@ tests/*
 !tests/*.c
 !tests/*.h
 !tests/*.txt
+manager/manager
+mbroker/mbroker
+publisher/pub
+subscriber/sub
 
 ######################
 # C Ignores

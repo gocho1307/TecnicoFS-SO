@@ -1,7 +1,8 @@
-#ifndef __SERVER_H__
-#define __SERVER_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #include <limits.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 /**
@@ -21,10 +22,19 @@ enum {
 };
 
 #define CLIENT_NAMED_PIPE_MAX_LEN (256)
-#define CLIENT_NAMED_PIPE_FORMAT ("/tmp/%s_%ld.pipe")
 #define BOX_NAME_MAX_LEN (32)
 #define MESSAGE_MAX_LEN (1024)
 #define PIPE_BUFFER_MAX_LEN (PIPE_BUF)
+
+/**
+ * Server communication box
+ */
+typedef struct {
+    char name[BOX_NAME_MAX_LEN];
+    uint64_t size;
+    uint64_t n_publishers;
+    uint64_t n_subscribers;
+} box;
 
 /**
  * Uses POSIX's read function, but handles EINTR and checks if everything was
@@ -52,12 +62,7 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
 /**
  *
  */
-int client_init(char *session_pipename);
-
-/**
- *
- */
 int client_request_connection(char *register_pipename, int code,
                               char *session_pipename, char *box_name);
 
-#endif // __SERVER_H__
+#endif // __COMMON_H__

@@ -1,2 +1,2 @@
-- Proj 1 GRADE: /20.00
+- Proj 1 GRADE: 19.36/20.00
 - Proj 2 GRADE: /20.00

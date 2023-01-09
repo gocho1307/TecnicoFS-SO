@@ -6,12 +6,14 @@
  */
 
 #include "sub.h"
-#include "../server/server.h"
+#include "../common/common.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 volatile sig_atomic_t shutdown_signaler = 0;
@@ -26,14 +28,16 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    // Session pipe name is truncated to fit the request message
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
-    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
 
     signal(SIGINT, subscriber_shutdown);
 
-    // Starts the session pipename for the subscriber
-    if (client_init(session_pipename) != 0) {
-        return EXIT_FAILURE;
+    // Creates the session pipename for the subscriber
+    if (mkfifo(session_pipename, 0777) < 0) {
+        WARN("Failed to create session pipe");
+        return -1;
     }
 
     // Requests the mbroker for a connection
@@ -54,13 +58,13 @@ int main(int argc, char **argv) {
 }
 
 int subscriber_read_messages(char *session_pipename) {
-    int number_messages = 0;
     int session_pipe_in = open(session_pipename, O_RDONLY);
     if (session_pipe_in < 0) {
         WARN("Failed to open pipe");
         return -1;
     }
 
+    int number_messages = 0;
     uint8_t code;
     char message[MESSAGE_MAX_LEN] = {0};
     while (shutdown_signaler == 0) {

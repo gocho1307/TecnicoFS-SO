@@ -6,8 +6,8 @@
  */
 
 #include "operations.h"
-#include "../utils/betterassert.h"
-#include "../utils/betterlocks.h"
+#include "../utils/better-assert.h"
+#include "../utils/better-locks.h"
 #include "config.h"
 #include "state.h"
 #include <pthread.h>

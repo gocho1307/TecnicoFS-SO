@@ -6,8 +6,8 @@
  */
 
 #include "state.h"
-#include "../utils/betterassert.h"
-#include "../utils/betterlocks.h"
+#include "../utils/better-assert.h"
+#include "../utils/better-locks.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -338,6 +338,8 @@ inode_t *inode_get(int inumber) {
     insert_delay(); // simulate storage access delay to inode
     return &inode_table[inumber];
 }
+
+size_t inode_table_size(void) { return INODE_TABLE_SIZE; }
 
 /**
  * Store the inumber for a sub file in a directory.

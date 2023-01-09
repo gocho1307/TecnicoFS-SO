@@ -6,11 +6,13 @@
  */
 
 #include "pub.h"
-#include "../server/server.h"
+#include "../common/common.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 static void print_usage() {
@@ -23,12 +25,14 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    // Session pipe name is truncated to fit the request message
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
-    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN);
+    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
 
-    // Starts the session pipename for the publisher
-    if (client_init(session_pipename) != 0) {
-        return EXIT_FAILURE;
+    // Creates the session pipename for the publisher
+    if (mkfifo(session_pipename, 0777) < 0) {
+        WARN("Failed to create session pipe");
+        return -1;
     }
 
     // Requests the mbroker for a connection
@@ -66,9 +70,7 @@ int publisher_write_messages(char *session_pipename) {
     packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
     char message[MESSAGE_MAX_LEN] = {0};
     while (fgets(message, MESSAGE_MAX_LEN, stdin) != NULL) {
-        if (message[strlen(message) - 1] == '\n') {
-            message[strlen(message) - 1] = '\0';
-        }
+        message[strcspn(message, "\n")] = '\0';
         packet_write(packet, &packet_offset, message,
                      sizeof(char) * MESSAGE_MAX_LEN);
         if (pipe_write(session_pipe_in, packet, packet_len) != 0) {

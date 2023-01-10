@@ -6,7 +6,7 @@
  */
 
 #include "sub.h"
-#include "../common/common.h"
+#include "../protocol/protocol.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <signal.h>

@@ -6,8 +6,8 @@
  */
 
 #include "manager.h"
-#include "../common/common.h"
 #include "../fs/state.h"
+#include "../protocol/protocol.h"
 #include "../utils/insertion-sort.h"
 #include "../utils/logging.h"
 #include <fcntl.h>
@@ -133,7 +133,7 @@ int manager_handle_box_listing(char *register_pipe_name,
     }
 
     size_t max_box_number = inode_table_size();
-    box boxes[max_box_number];
+    box_t boxes[max_box_number];
     int size = -1;
     uint8_t last = 0, code;
     while (last == 0) {
@@ -143,7 +143,7 @@ int manager_handle_box_listing(char *register_pipe_name,
             return -1;
         }
 
-        box new_box;
+        box_t new_box;
         if (pipe_read(session_pipe_in, &last, sizeof(uint8_t)) ||
             pipe_read(session_pipe_in, &new_box.name,
                       sizeof(char) * BOX_NAME_MAX_LEN) ||

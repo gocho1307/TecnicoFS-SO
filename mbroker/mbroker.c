@@ -106,7 +106,7 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
     // We initialize the tfs with the number of files the same as max sessions,
     // so it's possible to have <max_sessions> boxes all at once
     tfs_params params = tfs_default_params();
-    params.max_open_files_count = max_sessions;
+    params.max_open_files_count = max_sessions; // not sure about this
     if (tfs_init(&params) != 0) {
         WARN("Failed to initialize the tfs file system");
         return -1;

@@ -54,10 +54,9 @@ int main(int argc, char **argv) {
 
 int publisher_write_messages(char *session_pipename) {
     size_t packet_len = sizeof(uint8_t) + sizeof(char) * MESSAGE_MAX_LEN;
-    int8_t *packet = packet_create(packet_len);
-    if (packet == NULL) {
-        return -1;
-    }
+    packet_ensure_len_limit(packet_len);
+    int8_t packet[packet_len];
+    memset(packet, 0, packet_len);
     size_t packet_offset = 0;
 
     // [ code = 9 (uint8_t) ] | [ message (char[1024]) ]
@@ -72,16 +71,14 @@ int publisher_write_messages(char *session_pipename) {
     while (fgets(message, MESSAGE_MAX_LEN, stdin) != NULL) {
         message[strcspn(message, "\n")] = '\0';
         packet_write(packet, &packet_offset, message,
-                     sizeof(char) * MESSAGE_MAX_LEN);
+                     sizeof(char) * strlen(message));
         if (pipe_write(session_pipe_in, packet, packet_len) != 0) {
-            free(packet);
             close(session_pipe_in);
             return -1;
         }
         packet_offset = sizeof(uint8_t);
         memset(message, 0, MESSAGE_MAX_LEN);
     }
-    free(packet);
     close(session_pipe_in);
 
     return 0;

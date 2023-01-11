@@ -10,6 +10,11 @@
 #define MESSAGE_MAX_LEN (1024)
 #define PIPE_BUFFER_MAX_LEN (PIPE_BUF)
 
+#define packet_ensure_len_limit(len)                                           \
+    if (len > PIPE_BUFFER_MAX_LEN) {                                           \
+        return -1;                                                             \
+    }
+
 /**
  * Server codes (for interactions between the server and clients)
  */
@@ -47,11 +52,6 @@ ssize_t pipe_read(int pipe_fd, void *buf, size_t buf_len);
  * correctly written to the pipe.
  */
 ssize_t pipe_write(int pipe_fd, const void *buf, size_t buf_len);
-
-/**
- *
- */
-int8_t *packet_create(size_t packet_len);
 
 /**
  *

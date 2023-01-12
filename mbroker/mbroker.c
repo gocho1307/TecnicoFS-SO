@@ -6,7 +6,6 @@
  */
 
 #include "mbroker.h"
-#include "../common/common.h"
 #include "../fs/operations.h"
 #include "../producer-consumer/producer-consumer.h"
 #include "../utils/logging.h"
@@ -76,24 +75,17 @@ int main(int argc, char **argv) {
         uint8_t code;
 
         // Main listener loop
-        while ((bytes_read = pipe_read(register_pipe_in, &code, sizeof(char))) >
-               0) {
-            switch (code) {
-            case SERVER_CODE_PUB_REGISTER:
-                break;
-            case SERVER_CODE_SUB_REGISTER:
-                break;
-            case SERVER_CODE_CREATE_REQUEST:
-                break;
-            case SERVER_CODE_REMOVE_REQUEST:
-                break;
-            case SERVER_CODE_LIST_REQUEST:
-                break;
-            default:
-                close(register_pipe_in);
-                unlink(register_pipename);
-                return EXIT_FAILURE;
+        bytes_read = pipe_read(register_pipe_in, &code, sizeof(uint8_t));
+        while (bytes_read > 0) {
+            if (code != SERVER_CODE_PUB_REGISTER &&
+                code != SERVER_CODE_SUB_REGISTER &&
+                code != SERVER_CODE_CREATE_REQUEST &&
+                code != SERVER_CODE_REMOVE_REQUEST &&
+                code != SERVER_CODE_LIST_REQUEST) {
+                continue;
             }
+            mbroker_receive_connection(code);
+            bytes_read = pipe_read(register_pipe_in, &code, sizeof(uint8_t));
         }
 
         if (bytes_read < 0) {
@@ -106,6 +98,7 @@ int main(int argc, char **argv) {
 
     close(register_pipe_in);
     unlink(register_pipename);
+    mbroker_destroy();
     return 0;
 }
 
@@ -113,7 +106,7 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
     // We initialize the tfs with the number of files the same as max sessions,
     // so it's possible to have <max_sessions> boxes all at once
     tfs_params params = tfs_default_params();
-    params.max_open_files_count = max_sessions;
+    params.max_open_files_count = max_sessions; // not sure about this
     if (tfs_init(&params) != 0) {
         WARN("Failed to initialize the tfs file system");
         return -1;
@@ -147,9 +140,45 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
     return 0;
 }
 
+void mbroker_shutdown(int signum) { shutdown_signaler = signum; }
+
+void mbroker_destroy(void) {
+    if (tfs_destroy() != 0) {
+        WARN("Failed to destroy tfs");
+    }
+
+    if (pcq_destroy(requests_queue) != 0) {
+        WARN("Failed to destroy requests queue");
+    }
+    free(requests_queue);
+}
+
+void mbroker_receive_connection(int code) {
+    (void)code;
+    // TODO: Create request, parse that request according to the code (code ==
+    // SERVER_CODE_LIST_REQUEST makes it not have box name, everything else gets
+    // parsed the same way) and enqueue it in the requests_queue.
+}
+
 int workers_init(int num_threads) {
     (void)num_threads;
+    // TODO: creates max session threads in a loop and starts all of them on the
+    // workers_reception function.
     return 0;
 }
 
-void mbroker_shutdown(int signum) { shutdown_signaler = signum; }
+void *workers_reception(void) {
+    // TODO: Dequeues a request and does a switch case on the code to choose the
+    // right handler for that request.
+    return "TODO";
+}
+
+int workers_handle_pub_register(request_t *request) { return 0; }
+
+int workers_handle_sub_register(request_t *request) { return 0; }
+
+int workers_handle_manager_create(request_t *request) { return 0; }
+
+int workers_handle_manager_remove(request_t *request) { return 0; }
+
+int workers_handle_manager_listing(request_t *request) { return 0; }

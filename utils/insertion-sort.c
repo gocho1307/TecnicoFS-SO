@@ -10,7 +10,7 @@
 #include "logging.h"
 #include <string.h>
 
-void sorted_insert(box *boxes, int right, box new_box) {
+void sorted_insert(box_t *boxes, int right, box_t new_box) {
     if (right < -1) {
         WARN("Wrong index value, not eligible for insertion");
         return;

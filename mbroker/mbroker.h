@@ -20,7 +20,7 @@ typedef struct {
 /**
  *
  */
-int mbroker_init(char *pipename, size_t max_sessions);
+int mbroker_init(char *pipename, size_t max_sessions, pthread_t **thread_ids);
 
 /**
  *
@@ -35,17 +35,22 @@ void mbroker_destroy(void);
 /**
  *
  */
-void mbroker_receive_connection(int code);
+int mbroker_receive_connection(int code, int register_pipe_in);
 
 /**
  *
  */
-int workers_init(int num_threads);
+int workers_init(int num_threads, pthread_t **threads_ids);
 
 /**
  *
  */
-void *workers_reception(void);
+void *workers_reception(void* arg);
+
+/**
+ *
+ */
+int workers_destroy(int num_threads, pthread_t *threads_ids);
 
 /**
  *

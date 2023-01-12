@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
 
     signal(SIGINT, mbroker_shutdown);
 
-    if (mbroker_init(register_pipename, (size_t)max_sessions) != 0) {
+	pthread_t* thread_ids;
+    if (mbroker_init(register_pipename, (size_t)max_sessions, &thread_ids) != 0) {
         return EXIT_FAILURE;
     }
 
@@ -84,7 +85,12 @@ int main(int argc, char **argv) {
                 code != SERVER_CODE_LIST_REQUEST) {
                 continue;
             }
-            mbroker_receive_connection(code);
+            if ( mbroker_receive_connection(code, register_pipe_in) != 0) {
+				WARN("Failed to receive connection");
+				close(register_pipe_in);
+				unlink(register_pipename);
+				return EXIT_FAILURE;
+			}
             bytes_read = pipe_read(register_pipe_in, &code, sizeof(uint8_t));
         }
 
@@ -96,13 +102,14 @@ int main(int argc, char **argv) {
         }
     }
 
+	// TODO: Wait for all threads to finish
     close(register_pipe_in);
     unlink(register_pipename);
     mbroker_destroy();
     return 0;
 }
 
-int mbroker_init(char *register_pipename, size_t max_sessions) {
+int mbroker_init(char *register_pipename, size_t max_sessions, pthread_t **thread_ids) {
     // We initialize the tfs with the number of files the same as max sessions,
     // so it's possible to have <max_sessions> boxes all at once
     tfs_params params = tfs_default_params();
@@ -123,7 +130,7 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
         return -1;
     }
 
-    if (workers_init(max_sessions) != 0) {
+    if (workers_init(max_sessions, thread_ids) != 0) {
         tfs_destroy();
         free(requests_queue);
         return -1;
@@ -153,24 +160,90 @@ void mbroker_destroy(void) {
     free(requests_queue);
 }
 
-void mbroker_receive_connection(int code) {
-    (void)code;
+int mbroker_receive_connection(int code, int register_pipe_in) {
+
+	char bar;
+	ssize_t bytes_read = pipe_read(register_pipe_in, &bar, sizeof(char));
+
+	char client_named_pipe_path[256];
+	bytes_read = pipe_read(register_pipe_in, client_named_pipe_path, 256);
+
+	request_t *request = (request_t *)malloc(sizeof(request_t));
+	strcpy(request->client_named_pipe_path, client_named_pipe_path);
+	request->code = code;
+
+	char box_name[32];
+	if ( code != SERVER_CODE_LIST_REQUEST ) {
+		bytes_read = pipe_read(register_pipe_in, &bar, sizeof(char));
+        if (bytes_read < 0) {
+            WARN("Failed to read pipe");
+            return EXIT_FAILURE;
+        }
+		bytes_read = pipe_read(register_pipe_in, box_name, 32);
+        if (bytes_read < 0) {
+            WARN("Failed to read pipe");
+            return EXIT_FAILURE;
+        }
+		strcpy(request->box_name, box_name);
+	}
+
+	if (pcq_enqueue(requests_queue, (void*)request) != 0) {
+		WARN("Failed to enqueue request");
+		return EXIT_FAILURE;
+	}
+	
     // TODO: Create request, parse that request according to the code (code ==
     // SERVER_CODE_LIST_REQUEST makes it not have box name, everything else gets
     // parsed the same way) and enqueue it in the requests_queue.
 }
 
-int workers_init(int num_threads) {
-    (void)num_threads;
-    // TODO: creates max session threads in a loop and starts all of them on the
-    // workers_reception function.
+int workers_init(int num_threads, pthread_t **thread_ids) {
+
+	*thread_ids = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
+	if (*thread_ids == NULL) {
+		return -1;
+	}
+
+	for (int i = 0; i < num_threads; i++) {
+		if (pthread_create(&(*thread_ids)[i], NULL, workers_reception, NULL) != 0) {
+			return -1;
+		}
+	}
+
     return 0;
 }
 
-void *workers_reception(void) {
+void *workers_reception(void* arg) {
+
+	request_t *request = (request_t *)malloc(sizeof(request_t));
+	while (shutdown_signaler == 0) {
+		request = (request_t *)pcq_dequeue(requests_queue);
+		switch(request->code) {
+			case SERVER_CODE_PUB_REGISTER:
+				workers_handle_pub_register(request);
+				break;
+			case SERVER_CODE_SUB_REGISTER:
+				workers_handle_sub_register(request);
+				break;
+			case SERVER_CODE_CREATE_REQUEST:
+				workers_handle_manager_create(request);
+				break;
+			case SERVER_CODE_REMOVE_REQUEST:
+				workers_handle_manager_remove(request);
+				break;
+			case SERVER_CODE_LIST_REQUEST:
+				workers_handle_manager_listing(request);
+				break;
+		}
+	}
+
     // TODO: Dequeues a request and does a switch case on the code to choose the
     // right handler for that request.
-    return "TODO";
+    return NULL;
+}
+
+int workers_destroy(int num_threads, pthread_t *thread_ids) {
+	return 0;
 }
 
 int workers_handle_pub_register(request_t *request) { return 0; }

@@ -58,23 +58,34 @@ int pcq_enqueue(pc_queue_t *queue, void *elem) {
 
 	int isfull = 0;
 	mutex_lock(&(queue->pcq_current_size_lock));
-	if ( queue->pcq_current_size == queue->pcq_capacity ) {
-		isfull = 1;
-	}
-	mutex_unlock(&(queue->pcq_current_size_lock));
+	do {
+		if ( queue->pcq_current_size == queue->pcq_capacity ) {
+			isfull = 1;
+		}
 
-	if (isfull) {
-		mutex_lock(&(queue->pcq_pusher_condvar_lock));
-		cond_wait(&(queue->pcq_pusher_condvar), &(queue->pcq_pusher_condvar_lock));
-		mutex_unlock(&(queue->pcq_pusher_condvar_lock));
-	}
+		if (isfull) {
+			isfull = 0;
+			// We are going to wait, so we unlock the current_size_lock
+			mutex_unlock(&(queue->pcq_current_size_lock));
 
-	mutex_lock(&(queue->pcq_current_size_lock));
+			mutex_lock(&(queue->pcq_pusher_condvar_lock));
+			cond_wait(&(queue->pcq_pusher_condvar), &(queue->pcq_pusher_condvar_lock));
+			mutex_unlock(&(queue->pcq_pusher_condvar_lock));
+
+			// We are going to keep working, so we lock the current_size_lock
+			mutex_lock(&(queue->pcq_current_size_lock));
+		}
+	} while (isfull);
+
 	mutex_lock(&(queue->pcq_tail_lock));
-	queue->pcq_buffer[++queue->pcq_tail] = elem;
+	queue->pcq_buffer[queue->pcq_tail++] = elem;
 	queue->pcq_current_size++;
 	mutex_unlock(&(queue->pcq_tail_lock));
 	mutex_unlock(&(queue->pcq_current_size_lock));
+
+	mutex_lock(&(queue->pcq_popper_condvar_lock));
+	cond_signal(&(queue->pcq_popper_condvar));
+	mutex_unlock(&(queue->pcq_popper_condvar_lock));
 
 	return 0;
 }
@@ -83,23 +94,35 @@ void *pcq_dequeue(pc_queue_t *queue) {
 
 	int isempty = 0;
 	mutex_lock(&(queue->pcq_current_size_lock));
-	if ( queue->pcq_current_size == 0 ) {
-		isempty = 1;
-	}
+	do {
+		if ( queue->pcq_current_size == 0 ) {
+			isempty = 1;
+		}
 
-	if (isempty) {
-		mutex_lock(&(queue->pcq_popper_condvar_lock));
-		cond_wait(&(queue->pcq_popper_condvar), &(queue->pcq_popper_condvar_lock));
-		mutex_unlock(&(queue->pcq_popper_condvar_lock));
-	}
+		if (isempty) {
+			isempty = 0;
+			// We are going to wait, so we unlock the current_size_lock
+			mutex_unlock(&(queue->pcq_current_size_lock));
+
+			mutex_lock(&(queue->pcq_popper_condvar_lock));
+			cond_wait(&(queue->pcq_popper_condvar), &(queue->pcq_popper_condvar_lock));
+			mutex_unlock(&(queue->pcq_popper_condvar_lock));
+
+			// We are going to keep working, so we lock the current_size_lock
+			mutex_lock(&(queue->pcq_current_size_lock));
+		}
+	} while (isempty);
 
 	void* elem = NULL;
-	mutex_lock(&(queue->pcq_current_size_lock));
 	mutex_lock(&(queue->pcq_tail_lock));
-	elem = queue->pcq_buffer[queue->pcq_tail--];
+	elem = queue->pcq_buffer[--queue->pcq_tail];
 	queue->pcq_current_size--;
 	mutex_unlock(&(queue->pcq_tail_lock));
 	mutex_unlock(&(queue->pcq_current_size_lock));
+
+	mutex_lock(&(queue->pcq_pusher_condvar_lock));
+	cond_signal(&(queue->pcq_pusher_condvar));
+	mutex_unlock(&(queue->pcq_pusher_condvar_lock));
 
     return elem;
 }

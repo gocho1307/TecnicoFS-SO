@@ -30,7 +30,7 @@ void mbroker_shutdown(int signum);
 /**
  *
  */
-void mbroker_destroy(long max_sessions);
+void mbroker_destroy(size_t max_sessions);
 
 /**
  *
@@ -40,7 +40,12 @@ int mbroker_receive_connection(int code, int register_pipe_in);
 /**
  *
  */
-int workers_init(int num_threads);
+int workers_init(size_t num_threads);
+
+/**
+ *
+ */
+int workers_destroy(size_t num_threads);
 
 /**
  *

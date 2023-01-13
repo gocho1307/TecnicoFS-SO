@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
     printf("Closing mbroker server with pipe called: %s\n", register_pipename);
     close(register_pipe_out);
     unlink(register_pipename);
-    mbroker_destroy(max_sessions);
+    mbroker_destroy((size_t)max_sessions);
     return 0;
 }
 
@@ -183,7 +183,7 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
 
 void mbroker_shutdown(int signum) { shutdown_signaler = signum; }
 
-void mbroker_destroy(long max_sessions) {
+void mbroker_destroy(size_t num_threads) {
     if (tfs_destroy() != 0) {
         WARN("Failed to destroy tfs");
     }
@@ -193,18 +193,16 @@ void mbroker_destroy(long max_sessions) {
     }
     free(requests_queue);
 
+    if (workers_destroy(num_threads) != 0) {
+        WARN("Failed to destroy workers");
+    }
+	free(workers);
+
     for (size_t i = 0; i < inode_table_size(); i++) {
         mutex_destroy(&boxes_table[i].mutex);
         cond_destroy(&boxes_table[i].cond);
     }
     mutex_destroy(&free_boxes_mutex);
-
-	for (size_t i = 0; i < max_sessions; i++) {
-		if (pthread_join(workers[i], NULL) != 0) {
-			WARN("Failed to join worker thread");
-		}
-	}
-	free(workers);
 
     free(boxes_table);
     boxes_table = NULL;
@@ -240,7 +238,7 @@ int mbroker_receive_connection(int code, int register_pipe_in) {
     return 0;
 }
 
-int workers_init(int num_threads) {
+int workers_init(size_t num_threads) {
     for (int i = 0; i < num_threads; i++) {
         if (pthread_create(&workers[i], NULL, workers_reception, NULL) != 0) {
             return -1;
@@ -250,9 +248,20 @@ int workers_init(int num_threads) {
     return 0;
 }
 
+int workers_destroy(size_t num_threads) {
+    for (size_t i = 0; i < num_threads; i++) {
+		if (pthread_join(workers[i], NULL) != 0) {
+			WARN("Failed to join worker thread");
+            return -1;
+		}
+	}
+
+    return 0;
+}
+
 void *workers_reception(void *arg) {
     request_t *request;
-    while (shutdown_signaler == 0) {
+    while (true) {
         request = (request_t *)pcq_dequeue(requests_queue);
         switch (request->code) {
         case SERVER_CODE_PUB_REGISTER:

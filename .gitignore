@@ -1,8 +1,12 @@
 # TécnicoFs ignores
-tests/*
-!tests/*.c
-!tests/*.h
-!tests/*.txt
+tests/fs-tests/*
+!tests/fs-tests/*.c
+!tests/fs-tests/*.h
+!tests/fs-tests/*.txt
+tests/pcq-tests/*
+!tests/pcq-tests/*.c
+!tests/pcq-tests/*.h
+!tests/pcq-tests/*.txt
 manager/manager
 mbroker/mbroker
 publisher/pub

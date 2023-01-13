@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
     printf("Closing mbroker server with pipe called: %s\n", register_pipename);
     close(register_pipe_out);
     unlink(register_pipename);
-    mbroker_destroy();
+    mbroker_destroy(max_sessions);
     return 0;
 }
 
@@ -183,7 +183,7 @@ int mbroker_init(char *register_pipename, size_t max_sessions) {
 
 void mbroker_shutdown(int signum) { shutdown_signaler = signum; }
 
-void mbroker_destroy(void) {
+void mbroker_destroy(long max_sessions) {
     if (tfs_destroy() != 0) {
         WARN("Failed to destroy tfs");
     }
@@ -198,6 +198,13 @@ void mbroker_destroy(void) {
         cond_destroy(&boxes_table[i].cond);
     }
     mutex_destroy(&free_boxes_mutex);
+
+	for (size_t i = 0; i < max_sessions; i++) {
+		if (pthread_join(workers[i], NULL) != 0) {
+			WARN("Failed to join worker thread");
+		}
+	}
+	free(workers);
 
     free(boxes_table);
     boxes_table = NULL;
@@ -245,7 +252,7 @@ int workers_init(int num_threads) {
 
 void *workers_reception(void *arg) {
     request_t *request;
-    while (true) {
+    while (shutdown_signaler == 0) {
         request = (request_t *)pcq_dequeue(requests_queue);
         switch (request->code) {
         case SERVER_CODE_PUB_REGISTER:

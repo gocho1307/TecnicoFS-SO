@@ -30,7 +30,7 @@ void mbroker_shutdown(int signum);
 /**
  *
  */
-void mbroker_destroy(void);
+void mbroker_destroy(long max_sessions);
 
 /**
  *

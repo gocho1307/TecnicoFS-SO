@@ -10,7 +10,6 @@
 #include "../utils/logging.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -23,6 +22,7 @@ ssize_t pipe_read(int pipe_fd, void *buf, size_t buf_len) {
     if (read_bytes != buf_len) {
         return -1;
     }
+
     return read_bytes;
 }
 
@@ -35,6 +35,7 @@ ssize_t pipe_write(int pipe_fd, const void *buf, size_t buf_len) {
     if (written_bytes != buf_len) {
         return -1;
     }
+
     return written_bytes;
 }
 
@@ -59,11 +60,11 @@ int client_request_connection(char *register_pipename, int code,
     }
     packet_ensure_len_limit(packet_len);
     int8_t packet[packet_len];
-    memset(packet, 0, packet_len);
-    size_t packet_offset = 0;
 
     // [ code (uint8_t) ] | [ client_named_pipe_path (char[256]) ] |
     // [ box_name (char[32]) ]
+    size_t packet_offset = 0;
+    memset(packet, 0, packet_len);
     packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
     packet_write(packet, &packet_offset, session_pipename,
                  sizeof(char) * strlen(session_pipename));
@@ -86,5 +87,6 @@ int client_request_connection(char *register_pipename, int code,
         WARN("Failed to close register pipe");
         return -1;
     }
+
     return 0;
 }

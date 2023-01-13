@@ -1,13 +1,14 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
+#include "../fs/state.h"
 #include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
 
 #define CLIENT_NAMED_PIPE_MAX_LEN (256)
 #define BOX_NAME_MAX_LEN (32)
-#define MESSAGE_MAX_LEN (1024)
+#define MSG_MAX_LEN (1024)
 #define PIPE_BUFFER_MAX_LEN (PIPE_BUF)
 
 #define packet_ensure_len_limit(len)                                           \
@@ -39,6 +40,9 @@ typedef struct {
     uint64_t size;
     uint64_t n_publishers;
     uint64_t n_subscribers;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
 } box_t;
 
 /**

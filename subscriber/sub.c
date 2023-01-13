@@ -10,10 +10,8 @@
 #include "../utils/logging.h"
 #include <fcntl.h>
 #include <signal.h>
-#include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 volatile sig_atomic_t shutdown_signaler = 0;
@@ -28,16 +26,17 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    signal(SIGINT, subscriber_shutdown);
+    signal(SIGPIPE, SIG_IGN);
+
     // Session pipe name is truncated to fit the request message
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
     strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
 
-    signal(SIGINT, subscriber_shutdown);
-
     // Creates the session pipename for the subscriber
     if (mkfifo(session_pipename, 0777) < 0) {
         WARN("Failed to create session pipe");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     // Requests the mbroker for a connection
@@ -58,31 +57,31 @@ int main(int argc, char **argv) {
 }
 
 int subscriber_read_messages(char *session_pipename) {
-    int session_pipe_in = open(session_pipename, O_RDONLY);
-    if (session_pipe_in < 0) {
+    int session_pipe_out = open(session_pipename, O_RDONLY);
+    if (session_pipe_out < 0) {
         WARN("Failed to open pipe");
         return -1;
     }
 
     int number_messages = 0;
     uint8_t code;
-    char message[MESSAGE_MAX_LEN] = {0};
+    char message[MSG_MAX_LEN] = {0};
     while (shutdown_signaler == 0) {
-        if (pipe_read(session_pipe_in, &code, sizeof(uint8_t)) ||
+        if (pipe_read(session_pipe_out, &code, sizeof(uint8_t)) ||
             code != SERVER_CODE_MESSAGE_SEND) {
-            close(session_pipe_in);
+            close(session_pipe_out);
             return -1;
         }
-        if (pipe_read(session_pipe_in, &message,
-                      sizeof(char) * MESSAGE_MAX_LEN) != 0) {
-            close(session_pipe_in);
+        if (pipe_read(session_pipe_out, &message, sizeof(char) * MSG_MAX_LEN) !=
+            0) {
+            close(session_pipe_out);
             return -1;
         }
         fprintf(stdout, "%s\n", message);
         number_messages++;
     }
     printf("Number of messages read: %d\n", number_messages);
-    close(session_pipe_in);
+    close(session_pipe_out);
 
     return 0;
 }

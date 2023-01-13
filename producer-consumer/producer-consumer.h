@@ -2,11 +2,6 @@
 #define __PRODUCER_CONSUMER_H__
 
 #include <pthread.h>
-#include "../utils/better-locks.h"
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 // IMPORTANT: do not change anything in this file
 //

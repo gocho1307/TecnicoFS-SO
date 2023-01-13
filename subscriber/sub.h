@@ -11,4 +11,9 @@ int subscriber_read_messages(char *session_pipename);
  */
 void subscriber_shutdown(int signum);
 
+/**
+ *
+ */
+void subscriber_shutdown(int signum);
+
 #endif // __SUBSCRIBER_H__

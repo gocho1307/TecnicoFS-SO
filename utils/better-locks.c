@@ -9,8 +9,6 @@
 #include "logging.h"
 #include <errno.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 /**
@@ -95,46 +93,46 @@ void mutex_unlock(pthread_mutex_t *mutex) {
 }
 
 /**
- * Initializes a cond. When unsuccessful, it exits with failure.
+ * Initializes a conditional variable. When unsuccessful, it exits with failure.
  */
 void cond_init(pthread_cond_t *cond) {
     if (pthread_cond_init(cond, NULL) != 0) {
-        PANIC("Failed to initialize cond: %s", strerror(errno));
+        PANIC("Failed to initialize conditional variable: %s", strerror(errno));
     }
 }
 
 /**
- * Destroys a cond. When unsuccessful, it exits with failure.
+ * Destroys a conditional variable. When unsuccessful, it exits with failure.
  */
 void cond_destroy(pthread_cond_t *cond) {
     if (pthread_cond_destroy(cond) != 0) {
-        PANIC("Failed to destroy cond: %s", strerror(errno));
+        PANIC("Failed to destroy conditional variable: %s", strerror(errno));
     }
 }
 
 /**
- * Waits for a cond. When unsuccessful, it exits with failure.
+ * Waits for a conditional variable. When unsuccessful, it exits with failure.
  */
 void cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex) {
-	if (pthread_cond_wait(cond, mutex) != 0) {
-		PANIC("Failed to wait for cond: %s", strerror(errno));
-	}
+    if (pthread_cond_wait(cond, mutex) != 0) {
+        PANIC("Failed to wait for conditional variable: %s", strerror(errno));
+    }
 }
 
 /**
- * Signals a cond. When unsuccessful, it exits with failure.
+ * Signals a conditional variable. When unsuccessful, it exits with failure.
  */
 void cond_signal(pthread_cond_t *cond) {
-	if (pthread_cond_signal(cond) != 0) {
-		PANIC("Failed to signal cond: %s", strerror(errno));
-	}
+    if (pthread_cond_signal(cond) != 0) {
+        PANIC("Failed to signal conditional variable: %s", strerror(errno));
+    }
 }
 
 /**
- * Broadcasts a cond. When unsuccessful, it exits with failure.
+ * Broadcasts a conditional variable. When unsuccessful, it exits with failure.
  */
 void cond_broadcast(pthread_cond_t *cond) {
-	if (pthread_cond_broadcast(cond) != 0) {
-		PANIC("Failed to broadcast cond: %s", strerror(errno));
-	}
+    if (pthread_cond_broadcast(cond) != 0) {
+        PANIC("Failed to broadcast conditional variable: %s", strerror(errno));
+    }
 }

@@ -1,0 +1,49 @@
+#1
+manager cria caixa A
+manager cria caixa B
+manager cria caixa C
+manager remove caixa A
+manager remove caixa B
+manager remove caixa C
+
+#2
+manager cria caixa A
+publisher liga-se a A
+outro publisher tenta ligar-se a A
+
+#3
+manager cria caixa A
+publisher B liga-se a A
+B manda mensagem em A
+subscriber C liga-se a A
+B manda outra mensagem
+subscriber C desliga-se
+publisher desliga-se
+
+#4
+manager cria caixa A
+publisher B liga-se a A
+B manda mensagem em A
+B desliga-se
+publisher C liga-se a A
+C manda mensagem em A
+subscriber liga-se
+
+#5
+manager cria caixa A
+publisher B liga-se a A
+subscriber C liga-se a A
+subscriber D liga-se a A
+B manda mensagem em A
+
+#6
+manager cria caixa A
+manager cria caixa B
+publisher C liga-se a A
+publisher D liga-se a B
+C manda mensagem
+D manda mensagem
+listagem de caixas
+
+#7
+listagem de caixas

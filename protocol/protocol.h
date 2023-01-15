@@ -59,13 +59,28 @@ ssize_t pipe_read(int pipe_fd, void *buf, size_t buf_len);
 ssize_t pipe_write(int pipe_fd, const void *buf, size_t buf_len);
 
 /**
+ * Copies de data to the specified packet.
  *
+ * Input:
+ * - packet: The packet to be filled
+ * - packet_offset: Offset to beggin writing the data
+ * - data: The data to be written to the packet
+ * - data_len: The length of the data
  */
 void packet_write(void *packet, size_t *packet_offset, const void *data,
                   size_t data_len);
 
 /**
+ * Sends a request to the register pipe.
  *
+ * Input: 
+ *	- register_pipename: Name of the register fifo, from which mbroker receives
+ *	requests
+ *	- code: Request code number
+ *	- session_pipename: Name of the client pipe
+ *	- box_name: Except for the listing request, contains the name of the desired box.
+ *
+ *	Returns 0 if successful, -1 otherwise.
  */
 int client_request_connection(char *register_pipename, int code,
                               char *session_pipename, char *box_name);

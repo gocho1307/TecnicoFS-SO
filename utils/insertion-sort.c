@@ -10,15 +10,15 @@
 #include "logging.h"
 #include <string.h>
 
-void sorted_insert(box_t *boxes, int right, box_t new_box) {
+void sorted_insert(box_t *boxes, int right, box_t *new_box) {
     if (right < -1) {
         WARN("Wrong index value, not eligible for insertion");
         return;
     }
 
     // Inserts the element in the sorted array
-    for (; right >= 0 && strcmp(boxes[right].name, new_box.name) > 0; right--) {
+    for (; right >= 0 && strcmp(boxes[right].name, new_box->name) > 0; right--) {
         boxes[right + 1] = boxes[right];
     }
-    boxes[right + 1] = new_box;
+    boxes[right + 1] = *new_box;
 }

@@ -19,7 +19,7 @@ ssize_t pipe_read(int pipe_fd, void *buf, size_t buf_len) {
         read_bytes = read(pipe_fd, buf, buf_len);
     } while (read_bytes < 0 && errno == EINTR);
 
-    if (read_bytes != buf_len) {
+    if (read_bytes != 0 && read_bytes != buf_len) {
         return -1;
     }
 
@@ -46,16 +46,10 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
 }
 
 int client_request_connection(char *register_pipename, int code,
-                              char *session_pipename, char *name) {
-    char box_name[BOX_NAME_MAX_LEN] = {0};
-    if (name != NULL) {
-        // Box name is truncated to fit the request message
-        strncpy(box_name, name, BOX_NAME_MAX_LEN - 1);
-    }
-
+                              char *session_pipename, char *box_name) {
     size_t packet_len =
         sizeof(uint8_t) + sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN;
-    if (name != NULL) {
+    if (box_name != NULL) {
         packet_len += sizeof(char) * BOX_NAME_MAX_LEN;
     }
     packet_ensure_len_limit(packet_len);
@@ -67,8 +61,8 @@ int client_request_connection(char *register_pipename, int code,
     memset(packet, 0, packet_len);
     packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
     packet_write(packet, &packet_offset, session_pipename,
-                 sizeof(char) * strlen(session_pipename));
-    if (name != NULL) {
+                 sizeof(char) * CLIENT_NAMED_PIPE_MAX_LEN);
+    if (box_name != NULL) {
         packet_write(packet, &packet_offset, box_name,
                      sizeof(char) * strlen(box_name));
     }
@@ -78,7 +72,7 @@ int client_request_connection(char *register_pipename, int code,
         WARN("Failed to open register pipe");
         return -1;
     }
-    if (pipe_write(register_pipe_in, packet, packet_len) == -1) {
+    if (pipe_write(register_pipe_in, packet, packet_len) <= 0) {
         WARN("Failed to estabilish connection to mbroker");
         close(register_pipe_in);
         return -1;

@@ -8,33 +8,32 @@
 #include "pub.h"
 #include "../protocol/protocol.h"
 #include "../utils/logging.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-volatile sig_atomic_t shutdown_signaler = 0;
-
 static void print_usage() {
     fprintf(stderr, "Usage: pub <register_pipe_name> <pipe_name> <box_name>\n");
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
+    if (argc != 4) {
         print_usage();
         return EXIT_FAILURE;
     }
 
-    signal(SIGINT, publisher_shutdown);
-    signal(SIGPIPE, publisher_shutdown);
+    signal(SIGPIPE, SIG_IGN);
 
     // Session pipe name is truncated to fit the request message
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
-    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
+    strcpy(session_pipename, argv[2]);
 
     // Creates the session pipename for the publisher
-    if (mkfifo(session_pipename, 0777) < 0) {
+    if ((unlink(session_pipename) != 0 && errno != ENOENT) ||
+        mkfifo(session_pipename, 0777) < 0) {
         WARN("Failed to create session pipe");
         return EXIT_FAILURE;
     }
@@ -71,13 +70,16 @@ int publisher_write_messages(char *session_pipename) {
     uint8_t code = SERVER_CODE_MESSAGE_RECEIVE;
     char message[MSG_MAX_LEN] = {0};
     char c = '\0';
-    while (c != EOF && shutdown_signaler == 0) {
+    while (true) {
         // Reads a full message of MSG_MAX_LEN length at a time until it reaches
         // \n or EOF. Doesn't truncate the message.
         int message_len = 0;
-        while (message_len < MSG_MAX_LEN && (c = getchar()) != '\n' &&
+        while (message_len < MSG_MAX_LEN && (c = (char)getchar()) != '\n' &&
                c != EOF) {
             message[message_len++] = c;
+        }
+        if (c == EOF) {
+            break;
         }
         message[message_len] = '\0';
 
@@ -86,7 +88,8 @@ int publisher_write_messages(char *session_pipename) {
         packet_write(packet, &packet_offset, &code, sizeof(uint8_t));
         packet_write(packet, &packet_offset, message,
                      sizeof(char) * strlen(message));
-        if (pipe_write(session_pipe_in, packet, packet_len) != 0) {
+        if (pipe_write(session_pipe_in, packet, packet_len) <= 0 ||
+            errno == EPIPE) {
             close(session_pipe_in);
             return -1;
         }
@@ -95,5 +98,3 @@ int publisher_write_messages(char *session_pipename) {
 
     return 0;
 }
-
-void publisher_shutdown(int signum) { shutdown_signaler = signum; }

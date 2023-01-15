@@ -8,6 +8,7 @@
 #include "sub.h"
 #include "../protocol/protocol.h"
 #include "../utils/logging.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
@@ -21,7 +22,7 @@ static void print_usage() {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
+    if (argc != 4) {
         print_usage();
         return EXIT_FAILURE;
     }
@@ -31,10 +32,11 @@ int main(int argc, char **argv) {
 
     // Session pipe name is truncated to fit the request message
     char session_pipename[CLIENT_NAMED_PIPE_MAX_LEN] = {0};
-    strncpy(session_pipename, argv[2], CLIENT_NAMED_PIPE_MAX_LEN - 1);
+    strcpy(session_pipename, argv[2]);
 
     // Creates the session pipename for the subscriber
-    if (mkfifo(session_pipename, 0777) < 0) {
+    if ((unlink(session_pipename) != 0 && errno != ENOENT) ||
+        mkfifo(session_pipename, 0777) < 0) {
         WARN("Failed to create session pipe");
         return EXIT_FAILURE;
     }
@@ -63,24 +65,20 @@ int subscriber_read_messages(char *session_pipename) {
         return -1;
     }
 
-    int number_messages = 0;
+    int n_messages = 0;
     uint8_t code;
     char message[MSG_MAX_LEN] = {0};
     while (shutdown_signaler == 0) {
-        if (pipe_read(session_pipe_out, &code, sizeof(uint8_t)) ||
-            code != SERVER_CODE_MESSAGE_SEND) {
-            close(session_pipe_out);
-            return -1;
-        }
-        if (pipe_read(session_pipe_out, &message, sizeof(char) * MSG_MAX_LEN) !=
-            0) {
-            close(session_pipe_out);
-            return -1;
+        if (read(session_pipe_out, &code, sizeof(uint8_t)) != sizeof(uint8_t) ||
+            code != SERVER_CODE_MESSAGE_SEND ||
+            read(session_pipe_out, &message, sizeof(char) * MSG_MAX_LEN) !=
+                sizeof(char) * MSG_MAX_LEN) {
+            break;
         }
         fprintf(stdout, "%s\n", message);
-        number_messages++;
+        n_messages++;
     }
-    printf("Number of messages read: %d\n", number_messages);
+    fprintf(stdout, "Number of messages read: %d\n", n_messages);
     close(session_pipe_out);
 
     return 0;

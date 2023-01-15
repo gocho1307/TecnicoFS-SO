@@ -1,0 +1,71 @@
+#1
+manager cria caixa A
+manager cria caixa B
+manager cria caixa C
+manager remove caixa A
+manager remove caixa B
+manager remove caixa C
+
+#2
+manager cria caixa A
+publisher liga-se a A
+outro publisher tenta ligar-se a A
+
+#3
+manager cria caixa A
+publisher B liga-se a A
+B manda mensagem em A
+subscriber C liga-se a A
+B manda outra mensagem
+subscriber C desliga-se
+publisher desliga-se
+
+#4
+manager cria caixa A
+publisher B liga-se a A
+B manda mensagem em A
+B desliga-se
+publisher C liga-se a A
+C manda mensagem em A
+subscriber liga-se
+
+#5
+manager cria caixa A
+publisher B liga-se a A
+subscriber C liga-se a A
+subscriber D liga-se a A
+B manda mensagem em A
+
+#6
+manager cria caixa A
+manager cria caixa B
+publisher C liga-se a A
+publisher D liga-se a B
+C manda mensagem
+D manda mensagem
+listagem de caixas
+
+#7
+listagem de caixas
+
+#8
+mbroker inicia com 3 threads
+manager cria caixa A e B
+publisher A conecta-se à caixa A
+publisher B conecta-se à caixa B
+subscriber A conecta-se à caixa A
+publisher A escreve e subscriber A lê à vontade
+publisher B escreve à vontade
+subscriber B tenta conectar-se à caixa B, mas fica em espera no queue
+publisher A entretanto termina sessão
+subscriber B tem thread para lhe atender o pedido
+subscriber B lê mensagens até ao momento da caixa B e fica à espera
+
+#9
+manager cria caixas várias caixas (apenas A e B vão ser usadas)
+subscribers C e D ligam-se à caixa A
+publisher E liga-se à caixa A
+publisher F liga-se à caixa B
+subscribers G liga-se à caixa B
+os publishers começam a escrever à vontade a partir de ficheiros input
+concorrentemente o manager lista as caixas de forma ordenada tendo em conta que servidor não as envia de forma ordenada

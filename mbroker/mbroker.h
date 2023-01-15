@@ -25,27 +25,12 @@ int mbroker_init(char *pipename, size_t max_sessions);
 /**
  *
  */
-void mbroker_shutdown(int signum);
-
-/**
- *
- */
-void mbroker_destroy(size_t max_sessions);
-
-/**
- *
- */
-int mbroker_receive_connection(int code, int register_pipe_in);
+int mbroker_receive_connection(uint8_t code, int register_pipe_in);
 
 /**
  *
  */
 int workers_init(size_t num_threads);
-
-/**
- *
- */
-int workers_destroy(size_t num_threads);
 
 /**
  *
@@ -76,5 +61,20 @@ int workers_handle_manager_remove(request_t *request);
  *
  */
 int workers_handle_manager_listing(request_t *request);
+
+/**
+ *
+ */
+int box_create(char *box_name);
+
+/**
+ *
+ */
+int box_delete(char *box_name);
+
+/**
+ *
+ */
+int box_find(char *box_name);
 
 #endif // __MBROKER_H__

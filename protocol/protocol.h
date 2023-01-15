@@ -40,6 +40,7 @@ typedef struct {
     uint64_t size;
     uint64_t n_publishers;
     uint64_t n_subscribers;
+    char publisher_named_pipe_path[CLIENT_NAMED_PIPE_MAX_LEN];
 
     pthread_mutex_t mutex;
     pthread_cond_t cond;

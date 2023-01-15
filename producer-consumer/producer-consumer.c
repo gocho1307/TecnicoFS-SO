@@ -8,7 +8,6 @@
 
 #include "producer-consumer.h"
 #include "../utils/better-locks.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 int pcq_create(pc_queue_t *queue, size_t capacity) {
@@ -79,10 +78,7 @@ int pcq_enqueue(pc_queue_t *queue, void *elem) {
         cond_wait(&queue->pcq_pusher_condvar, &queue->pcq_pusher_condvar_lock);
         mutex_lock(&queue->pcq_current_size_lock);
     }
-    mutex_unlock(&queue->pcq_current_size_lock);
-    mutex_unlock(&queue->pcq_pusher_condvar_lock);
 
-    mutex_lock(&queue->pcq_current_size_lock);
     mutex_lock(&queue->pcq_tail_lock);
     queue->pcq_buffer[queue->pcq_tail] = elem;
     queue->pcq_tail = (queue->pcq_tail + 1) % queue->pcq_capacity;
@@ -90,6 +86,7 @@ int pcq_enqueue(pc_queue_t *queue, void *elem) {
 
     queue->pcq_current_size++;
     mutex_unlock(&queue->pcq_current_size_lock);
+    mutex_unlock(&queue->pcq_pusher_condvar_lock);
 
     mutex_lock(&queue->pcq_popper_condvar_lock);
     cond_signal(&queue->pcq_popper_condvar);
@@ -111,10 +108,7 @@ void *pcq_dequeue(pc_queue_t *queue) {
         cond_wait(&queue->pcq_popper_condvar, &queue->pcq_popper_condvar_lock);
         mutex_lock(&queue->pcq_current_size_lock);
     }
-    mutex_unlock(&queue->pcq_current_size_lock);
-    mutex_unlock(&queue->pcq_popper_condvar_lock);
 
-    mutex_lock(&queue->pcq_current_size_lock);
     mutex_lock(&queue->pcq_head_lock);
     void *elem = queue->pcq_buffer[queue->pcq_head];
     queue->pcq_head = (queue->pcq_head + 1) % queue->pcq_capacity;
@@ -122,6 +116,7 @@ void *pcq_dequeue(pc_queue_t *queue) {
 
     queue->pcq_current_size--;
     mutex_unlock(&queue->pcq_current_size_lock);
+    mutex_unlock(&queue->pcq_popper_condvar_lock);
 
     mutex_lock(&queue->pcq_pusher_condvar_lock);
     cond_signal(&queue->pcq_pusher_condvar);

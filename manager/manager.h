@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#define MANAGER_CREATE ('c')
+#define MANAGER_REMOVE ('r')
+#define MANAGER_LISTING ('l')
+
 /**
  *
  */
@@ -14,10 +18,5 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
  */
 int manager_handle_box_listing(char *register_pipe_name,
                                char *session_pipename);
-
-/**
- *
- */
-void manager_shutdown(int signum);
 
 #endif // __MANAGER_H__

@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -39,7 +40,7 @@ int main(int argc, char **argv) {
     }
 
     // Requests the mbroker for a connection
-    if (client_request_connection(argv[1], SERVER_CODE_PUB_REGISTER,
+    if (client_request_connection(argv[1], PROTOCOL_CODE_PUB_REGISTER,
                                   session_pipename, argv[3]) != 0) {
         unlink(session_pipename);
         return EXIT_FAILURE;
@@ -67,21 +68,21 @@ int publisher_write_messages(char *session_pipename) {
         return -1;
     }
 
-    uint8_t code = SERVER_CODE_MESSAGE_RECEIVE;
+    uint8_t code = PROTOCOL_CODE_MESSAGE_RECEIVE;
     char message[MSG_MAX_LEN] = {0};
     char c = '\0';
     while (true) {
         // Reads a full message of MSG_MAX_LEN length at a time until it reaches
         // \n or EOF. Doesn't truncate the message.
         int message_len = 0;
-        while (message_len < MSG_MAX_LEN && (c = (char)getchar()) != '\n' &&
+        while (message_len < MSG_MAX_LEN - 1 && (c = (char)getchar()) != '\n' &&
                c != EOF) {
             message[message_len++] = c;
         }
+        message[message_len] = '\0';
         if (c == EOF) {
             break;
         }
-        message[message_len] = '\0';
 
         size_t packet_offset = 0;
         memset(packet, 0, packet_len);

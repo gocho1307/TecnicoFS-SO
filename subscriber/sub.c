@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     }
 
     // Requests the mbroker for a connection
-    if (client_request_connection(argv[1], SERVER_CODE_SUB_REGISTER,
+    if (client_request_connection(argv[1], PROTOCOL_CODE_SUB_REGISTER,
                                   session_pipename, argv[3]) != 0) {
         unlink(session_pipename);
         return EXIT_FAILURE;
@@ -70,7 +70,7 @@ int subscriber_read_messages(char *session_pipename) {
     char message[MSG_MAX_LEN] = {0};
     while (shutdown_signaler == 0) {
         if (read(session_pipe_out, &code, sizeof(uint8_t)) != sizeof(uint8_t) ||
-            code != SERVER_CODE_MESSAGE_SEND ||
+            code != PROTOCOL_CODE_MESSAGE_SEND ||
             read(session_pipe_out, &message, sizeof(char) * MSG_MAX_LEN) !=
                 sizeof(char) * MSG_MAX_LEN) {
             break;
@@ -78,6 +78,7 @@ int subscriber_read_messages(char *session_pipename) {
         fprintf(stdout, "%s\n", message);
         n_messages++;
     }
+    // We always show the number of messages when the session ends
     fprintf(stdout, "Number of messages read: %d\n", n_messages);
     close(session_pipe_out);
 

@@ -20,7 +20,6 @@ TEST_TARGETS := $(patsubst %.c,%,$(wildcard tests/*/*.c))
 
 TARGET_EXECS := mbroker/mbroker manager/manager publisher/pub subscriber/sub
 
-COMMON_SOURCES := $(wildcard common/*.c)
 MBROKER_SOURCES  := $(wildcard mbroker/*.c)
 FS_SOURCES  := $(wildcard fs/*.c)
 MANAGER_SOURCES  := $(wildcard manager/*.c)
@@ -30,7 +29,6 @@ PUBLISHER_SOURCES  := $(wildcard publisher/*.c)
 SUBSCRIBER_SOURCES  := $(wildcard subscriber/*.c)
 UTILS_SOURCES  := $(wildcard utils/*.c)
 
-COMMON_OBJECTS := $(COMMON_SOURCES:.c=.o)
 MBROKER_OBJECTS := $(MBROKER_SOURCES:.c=.o)
 FS_OBJECTS := $(FS_SOURCES:.c=.o)
 MANAGER_OBJECTS := $(MANAGER_SOURCES:.c=.o)
@@ -81,10 +79,10 @@ LDFLAGS += -fsanitize=thread
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
 $(TEST_TARGETS): $(FS_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
-mbroker/mbroker: $(FS_OBJECTS) $(COMMON_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
-manager/manager: $(FS_OBJECTS) $(COMMON_OBJECTS) $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
-publisher/pub: $(COMMON_OBJECTS) $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
-subscriber/sub: $(COMMON_OBJECTS) $(SUBSCRIBER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
+mbroker/mbroker: $(FS_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER_CONSUMER_OBJECTS) $(UTILS_OBJECTS)
+manager/manager: $(FS_OBJECTS) $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
+publisher/pub: $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
+subscriber/sub: $(SUBSCRIBER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 
 all: $(TARGET_EXECS)
 

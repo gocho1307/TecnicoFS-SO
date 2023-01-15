@@ -6,6 +6,8 @@
 #define MANAGER_CREATE ('c')
 #define MANAGER_REMOVE ('r')
 #define MANAGER_LISTING ('l')
+// Maximum number of supported boxes (the default is 64)
+#define MAX_BOX_AMOUNT (64)
 
 /**
  * Sends the create and remove requests to the register FIFO, waits for the

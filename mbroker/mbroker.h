@@ -5,17 +5,17 @@
 #include <sys/types.h>
 
 /**
- * Server request
+ * Server communication box
  */
 typedef struct {
-    uint8_t code;
-    char client_named_pipe_path[CLIENT_NAMED_PIPE_MAX_LEN];
-    union {
-        char box_name[BOX_NAME_MAX_LEN];
-        struct {
-        } empty;
-    };
-} request_t;
+    char name[BOX_NAME_MAX_LEN];
+    uint64_t size;
+    uint64_t n_publishers;
+    uint64_t n_subscribers;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+} box_t;
 
 /**
  * Initialises the mbroker parameters, threads and pipes, and the tfs
@@ -30,7 +30,7 @@ int mbroker_init(char *pipename, size_t max_sessions);
 
 /**
  * Finishes reading a request coming through the register pipe, where the
- * request code has already been read and sent as a parameter. It then 
+ * request code has already been read and sent as a parameter. It then
  * creates the according request_t structure and enqueues it in the pcq.
  *
  * Input:
@@ -53,7 +53,7 @@ int mbroker_receive_connection(uint8_t code, int register_pipe_in);
 int workers_init(size_t num_threads);
 
 /**
- * Function run by the threads sent in workers_init. They remain in 
+ * Function run by the threads sent in workers_init. They remain in
  * idle wait until it the pcq dequeues a request_t, for which they call
  * its respective handling function.
  *
@@ -127,7 +127,7 @@ int box_create(char *box_name);
 /**
  * Deletes the box with box_name name.
  *
- * Input: 
+ * Input:
  *	- box_name: name of the box to be deleted.
  *
  *	Returns 0 if successful, -1 otherwise.

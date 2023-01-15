@@ -1,7 +1,6 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
-#include "../fs/state.h"
 #include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -17,34 +16,33 @@
     }
 
 /**
- * Server codes (for interactions between the server and clients)
+ * Protocol codes (for interactions between the server and the clients)
  */
 enum {
-    SERVER_CODE_PUB_REGISTER = 1,
-    SERVER_CODE_SUB_REGISTER = 2,
-    SERVER_CODE_CREATE_REQUEST = 3,
-    SERVER_CODE_CREATE_ANSWER = 4,
-    SERVER_CODE_REMOVE_REQUEST = 5,
-    SERVER_CODE_REMOVE_ANSWER = 6,
-    SERVER_CODE_LIST_REQUEST = 7,
-    SERVER_CODE_LIST_ANSWER = 8,
-    SERVER_CODE_MESSAGE_RECEIVE = 9,
-    SERVER_CODE_MESSAGE_SEND = 10,
+    PROTOCOL_CODE_PUB_REGISTER = 1,
+    PROTOCOL_CODE_SUB_REGISTER = 2,
+    PROTOCOL_CODE_CREATE_REQUEST = 3,
+    PROTOCOL_CODE_CREATE_ANSWER = 4,
+    PROTOCOL_CODE_REMOVE_REQUEST = 5,
+    PROTOCOL_CODE_REMOVE_ANSWER = 6,
+    PROTOCOL_CODE_LIST_REQUEST = 7,
+    PROTOCOL_CODE_LIST_ANSWER = 8,
+    PROTOCOL_CODE_MESSAGE_RECEIVE = 9,
+    PROTOCOL_CODE_MESSAGE_SEND = 10,
 };
 
 /**
- * Server communication box
+ * Protocol requests (for interactions between the server and the clients)
  */
 typedef struct {
-    char name[BOX_NAME_MAX_LEN];
-    uint64_t size;
-    uint64_t n_publishers;
-    uint64_t n_subscribers;
-    char publisher_named_pipe_path[CLIENT_NAMED_PIPE_MAX_LEN];
-
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-} box_t;
+    uint8_t code;
+    char client_named_pipe_path[CLIENT_NAMED_PIPE_MAX_LEN];
+    union {
+        char box_name[BOX_NAME_MAX_LEN];
+        struct {
+        } empty;
+    };
+} request_t;
 
 /**
  * Uses POSIX's read function, but handles EINTR and checks if everything was
@@ -73,12 +71,13 @@ void packet_write(void *packet, size_t *packet_offset, const void *data,
 /**
  * Sends a request to the register pipe.
  *
- * Input: 
- *	- register_pipename: Name of the register fifo, from which mbroker receives
- *	requests
+ * Input:
+ *	- register_pipename: Name of the register fifo, from which mbroker
+ *receives requests
  *	- code: Request code number
  *	- session_pipename: Name of the client pipe
- *	- box_name: Except for the listing request, contains the name of the desired box.
+ *	- box_name: Except for the listing request, contains the name of the
+ *desired box.
  *
  *	Returns 0 if successful, -1 otherwise.
  */

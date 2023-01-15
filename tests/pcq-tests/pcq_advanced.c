@@ -9,11 +9,11 @@
  *
  */
 int main() {
-	// Create an int array
-	int* numbers = (int*) malloc(QUEUE_CAPACITY * sizeof(int));
-	for (int i = 0; i < QUEUE_CAPACITY; i++) {
-		numbers[i] = i;
-	}
+    // Create an int array
+    int *numbers = (int *)malloc(QUEUE_CAPACITY * sizeof(int));
+    for (int i = 0; i < QUEUE_CAPACITY; i++) {
+        numbers[i] = i;
+    }
 
     // Create the queue
     pc_queue_t *queue = (pc_queue_t *)malloc(sizeof(pc_queue_t));

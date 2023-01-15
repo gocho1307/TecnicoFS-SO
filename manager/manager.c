@@ -6,7 +6,6 @@
  */
 
 #include "manager.h"
-#include "../fs/config.h"
 #include "../protocol/protocol.h"
 #include "../utils/insertion-sort.h"
 #include "../utils/logging.h"
@@ -55,11 +54,11 @@ int main(int argc, char **argv) {
     switch (operation[0]) {
     case MANAGER_CREATE:
         result = manager_handle_box_management(
-            argv[1], SERVER_CODE_CREATE_REQUEST, session_pipename, argv[4]);
+            argv[1], PROTOCOL_CODE_CREATE_REQUEST, session_pipename, argv[4]);
         break;
     case MANAGER_REMOVE:
         result = manager_handle_box_management(
-            argv[1], SERVER_CODE_REMOVE_REQUEST, session_pipename, argv[4]);
+            argv[1], PROTOCOL_CODE_REMOVE_REQUEST, session_pipename, argv[4]);
         break;
     case MANAGER_LISTING:
         result = manager_handle_box_listing(argv[1], session_pipename);
@@ -90,12 +89,13 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
         return -1;
     }
 
+    // We read and validate the code
     if (pipe_read(session_pipe_out, &code, sizeof(uint8_t)) <= 0) {
         close(session_pipe_out);
         return -1;
     }
-    if (code != SERVER_CODE_CREATE_ANSWER &&
-        code != SERVER_CODE_REMOVE_ANSWER) {
+    if (code != PROTOCOL_CODE_CREATE_ANSWER &&
+        code != PROTOCOL_CODE_REMOVE_ANSWER) {
         close(session_pipe_out);
         return -1;
     }
@@ -105,6 +105,7 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
         close(session_pipe_out);
         return -1;
     }
+    // We print the message output for the operation granted by the server
     if (return_code == 0) {
         fprintf(stdout, "OK\n");
     } else {
@@ -123,8 +124,9 @@ int manager_handle_box_management(char *register_pipe_name, uint8_t code,
 
 int manager_handle_box_listing(char *register_pipe_name,
                                char *session_pipename) {
-    if (client_request_connection(register_pipe_name, SERVER_CODE_LIST_REQUEST,
-                                  session_pipename, NULL) != 0) {
+    if (client_request_connection(register_pipe_name,
+                                  PROTOCOL_CODE_LIST_REQUEST, session_pipename,
+                                  NULL) != 0) {
         return -1;
     }
 
@@ -138,8 +140,10 @@ int manager_handle_box_listing(char *register_pipe_name,
     int size = -1;
     uint8_t last = 0, code = 0;
     while (last == 0) {
+        // We read the information for each box in order
+        // code | last | box_name | box_size | n_publishers | n_subscribers
         if (pipe_read(session_pipe_out, &code, sizeof(uint8_t)) <= 0 ||
-            code != SERVER_CODE_LIST_ANSWER) {
+            code != PROTOCOL_CODE_LIST_ANSWER) {
             close(session_pipe_out);
             return -1;
         }
@@ -163,10 +167,12 @@ int manager_handle_box_listing(char *register_pipe_name,
     }
     close(session_pipe_out);
 
+    // We iterate over all the boxes and print the information one by one
     for (int i = 0; i <= size; i++) {
         fprintf(stdout, "%s %zu %zu %zu\n", boxes[i].name, boxes[i].size,
                 boxes[i].n_publishers, boxes[i].n_subscribers);
     }
+    // When no boxes are found the size is -1
     if (size == -1) {
         fprintf(stdout, "NO BOXES FOUND\n");
     }

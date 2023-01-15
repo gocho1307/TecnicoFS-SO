@@ -17,7 +17,8 @@ void sorted_insert(box_t *boxes, int right, box_t *new_box) {
     }
 
     // Inserts the element in the sorted array
-    for (; right >= 0 && strcmp(boxes[right].name, new_box->name) > 0; right--) {
+    for (; right >= 0 && strcmp(boxes[right].name, new_box->name) > 0;
+         right--) {
         boxes[right + 1] = boxes[right];
     }
     boxes[right + 1] = *new_box;

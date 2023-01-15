@@ -375,10 +375,19 @@ int workers_handle_sub_register(request_t *request) {
     while (true) {
         // Waits until a new message gets written on the box by a publisher
         mutex_lock(&boxes_table[box_i].mutex);
-        while (tfs_read(box_f, message, to_read) != to_read) {
+        while (free_boxes[box_i] == TAKEN &&
+               tfs_read(box_f, message, to_read) != to_read) {
             cond_wait(&boxes_table[box_i].cond, &boxes_table[box_i].mutex);
         }
         mutex_unlock(&boxes_table[box_i].mutex);
+        // Checks if the box was already deleted, ending the session in that
+        // case and freeing the worker
+        rwlock_rdlock(&free_boxes_lock);
+        if (free_boxes[box_i] != TAKEN) {
+            rwlock_unlock(&free_boxes_lock);
+            break;
+        }
+        rwlock_unlock(&free_boxes_lock);
         do {
             packet_offset = 0;
             memset(packet, 0, packet_len);
@@ -393,15 +402,6 @@ int workers_handle_sub_register(request_t *request) {
                 return 0;
             }
         } while (tfs_read(box_f, message, to_read) == to_read);
-
-        // Checks if the box was already deleted, ending the session in that
-        // case and freeing the worker
-        rwlock_rdlock(&free_boxes_lock);
-        if (free_boxes[box_i] != TAKEN) {
-            rwlock_unlock(&free_boxes_lock);
-            break;
-        }
-        rwlock_unlock(&free_boxes_lock);
     }
     mutex_lock(&boxes_table[box_i].mutex);
     boxes_table[box_i].n_subscribers--;
@@ -578,7 +578,10 @@ int box_delete(char *box_name) {
         if (free_boxes[i] == TAKEN &&
             strcmp(boxes_table[i].name, box_name) == 0) {
             // Marks entry as deleted
+            mutex_lock(&boxes_table[i].mutex);
             free_boxes[i] = FREE;
+            cond_broadcast(&boxes_table[i].cond);
+            mutex_unlock(&boxes_table[i].mutex);
             n_boxes--;
             rwlock_unlock(&free_boxes_lock);
 

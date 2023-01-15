@@ -109,9 +109,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    fprintf(stdout, "Closing mbroker server\n");
-    close(register_pipe_out);
-    unlink(register_pipename);
     return 0;
 }
 

@@ -66,8 +66,8 @@ endif
 # Multi-threading related flags
 LDFLAGS += -pthread
 # fsanitize flags
-CFLAGS += -fsanitize=thread
-LDFLAGS += -fsanitize=thread
+# CFLAGS += -fsanitize=thread
+# LDFLAGS += -fsanitize=thread
 # LDFLAGS += -fsanitize=undefined
 # LDFLAGS += -fsanitize=address
 

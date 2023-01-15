@@ -95,7 +95,6 @@ int publisher_write_messages(char *session_pipename) {
             return -1;
         }
     }
-    close(session_pipe_in);
 
     return 0;
 }

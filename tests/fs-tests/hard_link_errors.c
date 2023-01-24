@@ -7,9 +7,6 @@ const char *file_path = "/f1";
 const char *link_path1 = "/l1";
 const char *link_path2 = "/l2";
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

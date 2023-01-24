@@ -5,9 +5,6 @@
 
 #define QUEUE_CAPACITY 10
 
-/**
- *
- */
 int main() {
     // Create an int array
     int *numbers = (int *)malloc(QUEUE_CAPACITY * sizeof(int));

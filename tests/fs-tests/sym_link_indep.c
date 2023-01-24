@@ -23,9 +23,6 @@ void assert_empty_file(size_t rep, size_t file_idx);
 void write_contents(size_t rep, size_t file_idx);
 void run_test(size_t rep);
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

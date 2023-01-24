@@ -5,9 +5,6 @@
 
 #define QUEUE_CAPACITY 10
 
-/**
- *
- */
 int main() {
     int element = 1;
 

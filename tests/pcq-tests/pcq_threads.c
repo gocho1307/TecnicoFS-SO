@@ -11,9 +11,6 @@
 void *enqueuer(void *arg);
 void *dequeuer(void *arg);
 
-/**
- *
- */
 int main() {
     pc_queue_t *queue = (pc_queue_t *)malloc(sizeof(pc_queue_t));
     assert(pcq_create(queue, QUEUE_CAPACITY) == 0);

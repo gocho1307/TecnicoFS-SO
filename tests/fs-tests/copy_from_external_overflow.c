@@ -5,9 +5,6 @@
 char *path_copied_file = "/f1";
 char *path_src = "tests/file_overflow.txt";
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

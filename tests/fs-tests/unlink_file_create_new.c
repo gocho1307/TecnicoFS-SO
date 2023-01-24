@@ -5,9 +5,6 @@
 
 char *path = "/f1";
 
-/**
- *
- */
 int main() {
     tfs_params params = tfs_default_params();
     params.max_inode_count = 2;

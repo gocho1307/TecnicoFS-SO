@@ -7,18 +7,17 @@ CC ?= gcc
 LD ?= gcc
 
 # space separated list of directories with header files
-INCLUDE_DIRS := fs protocol utils producer-consumer .
+INCLUDE_DIRS := fs manager mbroker producer-consumer protocol publisher subscriber utils .
 # this creates a space separated list of -I<dir> where <dir> is each of the values in INCLUDE_DIRS
 INCLUDES = $(addprefix -I, $(INCLUDE_DIRS))
 
 SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
+TARGET_EXECS := mbroker/mbroker manager/manager publisher/pub subscriber/sub
 
 TEST_SOURCES := $(wildcard tests/*/*.c)
 TEST_TARGETS := $(patsubst %.c,%,$(wildcard tests/*/*.c))
-
-TARGET_EXECS := mbroker/mbroker manager/manager publisher/pub subscriber/sub
 
 MBROKER_SOURCES  := $(wildcard mbroker/*.c)
 FS_SOURCES  := $(wildcard fs/*.c)
@@ -75,6 +74,8 @@ LDFLAGS += -pthread
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
 .PHONY: all test fmt clean depend
 
+all: $(TARGET_EXECS)
+
 # Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
@@ -83,8 +84,6 @@ mbroker/mbroker: $(FS_OBJECTS) $(MBROKER_OBJECTS) $(PROTOCOL_OBJECTS) $(PRODUCER
 manager/manager: $(FS_OBJECTS) $(MANAGER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 publisher/pub: $(PUBLISHER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
 subscriber/sub: $(SUBSCRIBER_OBJECTS) $(PROTOCOL_OBJECTS) $(UTILS_OBJECTS)
-
-all: $(TARGET_EXECS)
 
 test: $(TEST_TARGETS)
 	retcode=0; \

@@ -9,9 +9,6 @@ char const target_path1[] = "/f1";
 char const link_path1[] = "/l1";
 char const link_path2[] = "/l2";
 
-/**
- *
- */
 int main() {
     // init TécnicoFS
     assert(tfs_init(NULL) != -1);

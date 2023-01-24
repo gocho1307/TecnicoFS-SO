@@ -77,7 +77,7 @@ Desta forma, quando chega um novo pedido de registo, este é colocado na fila e 
 
 A arquitetura do servidor está sumarizada na seguinte figura:
 
-![](architecture_proj2.png)
+![](mbroker.png)
 
 - O _mbroker_ usa o TFS para armazenar as mensagens das caixas;
 - A _main thread_ recebe pedidos através do _register pipe_ e coloca-os numa fila de produtor-consumidor;

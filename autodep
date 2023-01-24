@@ -1,33 +1,113 @@
-operations.o: fs/operations.c fs/operations.h fs/config.h fs/state.h \
- fs/betterassert.h
+operations.o: fs/operations.c fs/operations.h fs/config.h \
+ fs/../utils/better-assert.h fs/../utils/logging.h \
+ fs/../utils/better-locks.h fs/state.h
 state.o: fs/state.c fs/state.h fs/config.h fs/operations.h \
- fs/betterassert.h
-copy_from_external_empty.o: tests/copy_from_external_empty.c \
- fs/operations.h fs/config.h
-copy_from_external_errors.o: tests/copy_from_external_errors.c \
- fs/operations.h fs/config.h
-copy_from_external_large.o: tests/copy_from_external_large.c \
- fs/operations.h fs/config.h
-copy_from_external_small.o: tests/copy_from_external_small.c \
- fs/operations.h fs/config.h
-t1_2_1a_symlink_simple.o: tests/t1_2_1a_symlink_simple.c fs/operations.h \
- fs/config.h
-t1_2_1b_hardlink_simple.o: tests/t1_2_1b_hardlink_simple.c \
- fs/operations.h fs/config.h
-t1_2_2_data_blocks_created.o: tests/t1_2_2_data_blocks_created.c \
- fs/operations.h fs/config.h
-t1_2_3_symlink_resolution_failure.o: \
- tests/t1_2_3_symlink_resolution_failure.c tests/../fs/operations.h \
- tests/../fs/config.h
-t1_2_4_hardlink_indep.o: tests/t1_2_4_hardlink_indep.c fs/operations.h \
- fs/config.h
-t1_2_5_clear_data_blocks.o: tests/t1_2_5_clear_data_blocks.c \
- fs/operations.h fs/config.h
-t1_2_6_remove_file_create_new.o: tests/t1_2_6_remove_file_create_new.c \
- tests/../fs/operations.h tests/../fs/config.h
-t1_2_7_create_hard_link_with_soft_link.o: \
- tests/t1_2_7_create_hard_link_with_soft_link.c fs/operations.h \
- fs/config.h
-t1_2_8_hard_link_unlinking.o: tests/t1_2_8_hard_link_unlinking.c \
- tests/../fs/operations.h tests/../fs/config.h
-test1.o: tests/test1.c fs/operations.h fs/config.h
+ fs/../utils/better-assert.h fs/../utils/logging.h \
+ fs/../utils/better-locks.h
+manager.o: manager/manager.c manager/manager.h \
+ manager/../protocol/protocol.h manager/../utils/insertion-sort.h \
+ manager/../utils/../mbroker/mbroker.h \
+ manager/../utils/../mbroker/../protocol/protocol.h \
+ manager/../utils/logging.h
+mbroker.o: mbroker/mbroker.c mbroker/mbroker.h \
+ mbroker/../protocol/protocol.h mbroker/../fs/operations.h \
+ mbroker/../fs/config.h mbroker/../fs/state.h mbroker/../fs/operations.h \
+ mbroker/../producer-consumer/producer-consumer.h \
+ mbroker/../utils/better-locks.h mbroker/../utils/logging.h
+producer-consumer.o: producer-consumer/producer-consumer.c \
+ producer-consumer/producer-consumer.h \
+ producer-consumer/../utils/better-locks.h
+protocol.o: protocol/protocol.c protocol/protocol.h \
+ protocol/../utils/logging.h
+pub.o: publisher/pub.c publisher/pub.h publisher/../protocol/protocol.h \
+ publisher/../utils/logging.h
+sub.o: subscriber/sub.c subscriber/sub.h \
+ subscriber/../protocol/protocol.h subscriber/../utils/logging.h
+better-locks.o: utils/better-locks.c utils/logging.h
+insertion-sort.o: utils/insertion-sort.c utils/insertion-sort.h \
+ utils/../mbroker/mbroker.h utils/../mbroker/../protocol/protocol.h \
+ utils/logging.h
+logging.o: utils/logging.c utils/logging.h
+base_test.o: tests/fs-tests/base_test.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_empty.o: tests/fs-tests/copy_from_external_empty.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_errors.o: tests/fs-tests/copy_from_external_errors.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_file_created.o: \
+ tests/fs-tests/copy_from_external_file_created.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_hard_and_symbolic_links.o: \
+ tests/fs-tests/copy_from_external_hard_and_symbolic_links.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_large.o: tests/fs-tests/copy_from_external_large.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_overflow.o: \
+ tests/fs-tests/copy_from_external_overflow.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+copy_from_external_small.o: tests/fs-tests/copy_from_external_small.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+hard_link_errors.o: tests/fs-tests/hard_link_errors.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+hard_link_indep.o: tests/fs-tests/hard_link_indep.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+hard_link_no_duplicate_dir_entries.o: \
+ tests/fs-tests/hard_link_no_duplicate_dir_entries.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+hard_link_on_a_sym_link.o: tests/fs-tests/hard_link_on_a_sym_link.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+hard_link_simple.o: tests/fs-tests/hard_link_simple.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_errors.o: tests/fs-tests/sym_link_errors.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_indep.o: tests/fs-tests/sym_link_indep.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_inexistent_file_2.o: tests/fs-tests/sym_link_inexistent_file_2.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_inexistent_file.o: tests/fs-tests/sym_link_inexistent_file.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_no_duplicate_dir_entries.o: \
+ tests/fs-tests/sym_link_no_duplicate_dir_entries.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_resolution_failure.o: \
+ tests/fs-tests/sym_link_resolution_failure.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+sym_link_simple.o: tests/fs-tests/sym_link_simple.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_copy_from_external.o: tests/fs-tests/threads_copy_from_external.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_create_files.o: tests/fs-tests/threads_create_files.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_create_same_file.o: tests/fs-tests/threads_create_same_file.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_multiple_links.o: tests/fs-tests/threads_multiple_links.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_multiple_links_opened_file.o: \
+ tests/fs-tests/threads_multiple_links_opened_file.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_read_same_file.o: tests/fs-tests/threads_read_same_file.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_same_fd.o: tests/fs-tests/threads_same_fd.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_trunc_append.o: tests/fs-tests/threads_trunc_append.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+threads_write_new_files.o: tests/fs-tests/threads_write_new_files.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+unlink_clear_data_blocks.o: tests/fs-tests/unlink_clear_data_blocks.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+unlink_errors.o: tests/fs-tests/unlink_errors.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+unlink_file_create_new.o: tests/fs-tests/unlink_file_create_new.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+unlink_hard_link.o: tests/fs-tests/unlink_hard_link.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+unlink_opened_file.o: tests/fs-tests/unlink_opened_file.c \
+ tests/fs-tests/../../fs/operations.h tests/fs-tests/../../fs/config.h
+pcq_advanced.o: tests/pcq-tests/pcq_advanced.c \
+ tests/pcq-tests/../../producer-consumer/producer-consumer.h
+pcq_basic.o: tests/pcq-tests/pcq_basic.c \
+ tests/pcq-tests/../../producer-consumer/producer-consumer.h
+pcq_errors.o: tests/pcq-tests/pcq_errors.c \
+ tests/pcq-tests/../../producer-consumer/producer-consumer.h
+pcq_threads.o: tests/pcq-tests/pcq_threads.c \
+ tests/pcq-tests/../../producer-consumer/producer-consumer.h

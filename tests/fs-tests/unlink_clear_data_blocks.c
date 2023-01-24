@@ -15,9 +15,6 @@ char const link_path1[] = "/l1";
 void assert_contents_ok(char const *path);
 void write_contents(char const *path);
 
-/**
- *
- */
 int main() {
     // init TécnicoFS
     tfs_params params = tfs_default_params();

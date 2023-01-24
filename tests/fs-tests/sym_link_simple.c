@@ -15,9 +15,6 @@ void assert_contents_ok(char const *path);
 void assert_empty_file(char const *path);
 void write_contents(char const *path);
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

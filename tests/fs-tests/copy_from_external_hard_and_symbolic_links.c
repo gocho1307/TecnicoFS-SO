@@ -11,9 +11,6 @@ char *path_copied_file_link2 = "/l2";
 char *path_src = "tests/fs-tests/file_to_copy.txt";
 char buffer1[40] = {0}, buffer2[40] = {0};
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

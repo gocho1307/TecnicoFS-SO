@@ -6,9 +6,6 @@
 const char *file_path = "/f1";
 const char *link_path = "/l1";
 
-/**
- *
- */
 int main() {
     tfs_params params = tfs_default_params();
     params.max_inode_count = 3;

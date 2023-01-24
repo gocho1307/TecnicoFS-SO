@@ -8,9 +8,6 @@ char *path_copied_file = "/f1";
 char *path_src = "tests/fs-tests/file_to_copy.txt";
 char buffer[40] = {0};
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 

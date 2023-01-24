@@ -12,9 +12,6 @@ char *path_src1 = "tests/fs-tests/file_to_copy_many_different_characters.txt";
 char *path_src2 = "tests/fs-tests/file_to_copy_very_small.txt";
 char buffer[600] = {0};
 
-/**
- *
- */
 int main() {
     assert(tfs_init(NULL) != -1);
 
